@@ -913,7 +913,8 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     enabled: true,
     priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
     capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  }  {
+  },
+  {
     id: 'openrouter-baidu-qianfan-ocr-fast-free',
     provider: 'openrouter',
     model: 'baidu/qianfan-ocr-fast:free',
@@ -1239,7 +1240,6 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'mistral:pixtral-large-latest': { requestsPerDay: 300 },
   // AUTO-ADDED limits
   'openrouter:tencent/hy3-preview:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
- // AUTO-ADDED — tune
   'openrouter:baidu/qianfan-ocr-fast:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:google/gemma-4-26b-a4b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:google/gemma-4-31b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
