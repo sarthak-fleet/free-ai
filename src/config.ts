@@ -266,18 +266,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     enabled: true,
     priority: 0.76,
     capabilities: { toolCalling: true, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 8192 },
-  },
-  {
-    id: 'openrouter-gemma3-27b-free',
-    provider: 'openrouter',
-    model: 'google/gemma-3-27b-it:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.75,
-    capabilities: { toolCalling: false, jsonMode: true, vision: true, contextWindow: 131072, maxOutputTokens: 8192 },
-  },
-  {
+  }  {
     id: 'openrouter-qwen3-coder-free',
     provider: 'openrouter',
     model: 'qwen/qwen3-coder:free',
@@ -286,18 +275,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     enabled: true,
     priority: 0.73,
     capabilities: { toolCalling: true, jsonMode: true, vision: false, contextWindow: 131072, maxOutputTokens: 8192 },
-  },
-  {
-    id: 'openrouter-gemma3-12b-free',
-    provider: 'openrouter',
-    model: 'google/gemma-3-12b-it:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.71,
-    capabilities: { toolCalling: false, jsonMode: true, vision: true, contextWindow: 131072, maxOutputTokens: 8192 },
-  },
-  {
+  }  {
     id: 'openrouter-nvidia-nemotron-12b-free',
     provider: 'openrouter',
     model: 'nvidia/nemotron-nano-12b-v2-vl:free',
@@ -923,17 +901,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
   },
 
   // ── Auto-added by weekly model check (review priority + capabilities) ──
-  {
-    id: 'openrouter-tencent-hy3-preview-free',
-    provider: 'openrouter',
-    model: 'tencent/hy3-preview:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
+    {
     id: 'openrouter-baidu-qianfan-ocr-fast-free',
     provider: 'openrouter',
     model: 'baidu/qianfan-ocr-fast:free',
@@ -1052,38 +1020,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     enabled: true,
     priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
     capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
-    id: 'openrouter-google-gemma-3n-e2b-it-free',
-    provider: 'openrouter',
-    model: 'google/gemma-3n-e2b-it:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
-    id: 'openrouter-google-gemma-3n-e4b-it-free',
-    provider: 'openrouter',
-    model: 'google/gemma-3n-e4b-it:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
-    id: 'openrouter-google-gemma-3-4b-it-free',
-    provider: 'openrouter',
-    model: 'google/gemma-3-4b-it:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
+  }      {
     id: 'cerebras-qwen-3-235b-a22b-instruct-2507',
     provider: 'cerebras',
     model: 'qwen-3-235b-a22b-instruct-2507',
@@ -1144,18 +1081,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     enabled: true,
     priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
     capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-  {
-    id: 'openrouter-inclusionai-ling-2-6-1t-free',
-    provider: 'openrouter',
-    model: 'inclusionai/ling-2.6-1t:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
-  },
-];
+  }];
 
 const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   // Workers AI
@@ -1186,9 +1112,7 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:meta-llama/llama-3.3-70b-instruct:free': { requestsPerDay: 50 },
   'openrouter:openai/gpt-oss-120b:free': { requestsPerDay: 50 },
   'openrouter:qwen/qwen3-next-80b-a3b-instruct:free': { requestsPerDay: 50 },
-  'openrouter:google/gemma-3-27b-it:free': { requestsPerDay: 100 },
   'openrouter:qwen/qwen3-coder:free': { requestsPerDay: 50 },
-  'openrouter:google/gemma-3-12b-it:free': { requestsPerDay: 100 },
   'openrouter:nvidia/nemotron-nano-12b-v2-vl:free': { requestsPerDay: 100 },
   'openrouter:z-ai/glm-4.5-air:free': { requestsPerDay: 50 },
   'openrouter:meta-llama/llama-3.2-3b-instruct:free': { requestsPerDay: 100 },
@@ -1258,7 +1182,7 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'mistral:ministral-3b-latest': { requestsPerDay: 1000 },
   'mistral:pixtral-large-latest': { requestsPerDay: 300 },
   // AUTO-ADDED limits
-  'openrouter:tencent/hy3-preview:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+ // AUTO-ADDED — tune
   'openrouter:baidu/qianfan-ocr-fast:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:google/gemma-4-26b-a4b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:google/gemma-4-31b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
@@ -1271,9 +1195,9 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:nvidia/nemotron-nano-9b-v2:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:openai/gpt-oss-20b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:google/gemma-3n-e2b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:google/gemma-3n-e4b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:google/gemma-3-4b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+ // AUTO-ADDED — tune
+ // AUTO-ADDED — tune
+ // AUTO-ADDED — tune
   'cerebras:qwen-3-235b-a22b-instruct-2507': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:zai-glm-4.7': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   // AUTO-ADDED limits
@@ -1281,7 +1205,10 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-xs.2:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-m.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:inclusionai/ling-2.6-1t:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+ // AUTO-ADDED — tune
+  // AUTO-ADDED limits
+  'openrouter:inclusionai/ring-2.6-1t:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+  'openrouter:baidu/cobuddy:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
 };
 
 export interface RateLimitConfig {
@@ -1419,6 +1346,28 @@ const DEFAULT_IMAGE_MODELS: ImageModelCandidate[] = [
   { id: 'pollinations-flux', provider: 'pollinations', model: 'flux', enabled: true, priority: 0.60 },
   { id: 'pollinations-flux-realism', provider: 'pollinations', model: 'flux-realism', enabled: true, priority: 0.58 },
   { id: 'pollinations-turbo', provider: 'pollinations', model: 'turbo', enabled: true, priority: 0.55 },
+
+  // ── Auto-added by weekly model check (review priority + capabilities) ──
+  {
+    id: 'openrouter-inclusionai-ring-2-6-1t-free',
+    provider: 'openrouter',
+    model: 'inclusionai/ring-2.6-1t:free',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
+    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
+  },
+  {
+    id: 'openrouter-baidu-cobuddy-free',
+    provider: 'openrouter',
+    model: 'baidu/cobuddy:free',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
+    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
+  },
 ];
 
 const DEFAULT_VIDEO_MODELS: VideoModelCandidate[] = [
