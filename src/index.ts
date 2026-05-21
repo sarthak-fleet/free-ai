@@ -431,8 +431,13 @@ app.use('*', async (c, next) => {
 // GATEWAY_API_KEY must be set as a wrangler secret in production. Fail closed
 // for token-spending routes if it is missing; otherwise a misconfigured deploy
 // would silently become public.
+//
+// `/v1/analytics` is intentionally NOT exempt: it exposes per-provider /
+// per-project request volume and health, which is operational data the owner
+// should not publish. It requires a `GATEWAY_API_KEY` Bearer token like the
+// mutation endpoints. The owner dashboard (`/dashboard`) already sends the
+// token via its "Bearer token" field.
 const AUTH_EXEMPT_GET = new Set([
-  '/v1/analytics',
   '/v1/stats/providers',
   '/v1/models',
   '/v1/dashboard',
@@ -2746,7 +2751,9 @@ const analyticsRoute = createRoute({
 });
 
 app.openapi(analyticsRoute, async (c) => {
-  // Analytics is publicly readable. Only data-generating endpoints require GATEWAY_API_KEY.
+  // Auth is enforced by the `/v1/*` middleware — `/v1/analytics` is not in
+  // AUTH_EXEMPT_GET, so a valid GATEWAY_API_KEY Bearer token is required to
+  // reach this handler. It exposes provider/project load, so it is not public.
   const query = c.req.valid('query');
   const projectId = query.project_id;
   const days = query.days;
@@ -2837,6 +2844,30 @@ app.doc('/openapi.json', {
 });
 
 
+
+// Catch-all for uncaught exceptions in any route handler. Keeps the gateway's
+// `{ error: { message, type } }` contract consistent (and classified) instead
+// of Hono's default plain-text 500 — no route can fail silently or unshaped.
+app.onError((err, c) => {
+  const type = classifyError(err);
+  const status = type === 'input_nonretriable' ? 400 : type === 'usage_retriable' ? 429 : 500;
+  capture({
+    distinctId: 'free-ai',
+    event: 'error_captured',
+    properties: {
+      project_slug: 'free-ai',
+      route: new URL(c.req.url).pathname,
+      method: c.req.method,
+      type,
+      source: 'worker_onError',
+      message: getErrorMessage(err),
+    },
+  });
+  return c.json(
+    { error: { message: getErrorMessage(err), type } },
+    status,
+  );
+});
 
 // Fallback to static assets (docs site) for any path worker doesn't handle
 app.notFound((c) => {
