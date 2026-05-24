@@ -32,6 +32,7 @@ export interface FakeEnvOverrides {
   WORKERS_AI_ENABLED?: string;
   kv?: Map<string, string>;
   providerStats?: unknown[];
+  healthSnapshots?: unknown[];
   // Allow tests to simulate rate-limit denials
   rateLimitDeny?: boolean;
 }
@@ -63,10 +64,10 @@ export function makeTestEnv(overrides: FakeEnvOverrides = {}) {
 
   const HEALTH_DO = makeDoNamespace(async (path) => {
     if (path === '/lookup') {
-      return Response.json({ snapshots: [] });
+      return Response.json({ snapshots: overrides.healthSnapshots ?? [] });
     }
     if (path === '/snapshot') {
-      return Response.json({ snapshots: [] });
+      return Response.json({ snapshots: overrides.healthSnapshots ?? [] });
     }
     if (path === '/providers/stats') {
       return Response.json({ stats: overrides.providerStats ?? [] });

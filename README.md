@@ -266,6 +266,17 @@ GET /v1/models
 
 Lists all available models with health status and routing metadata.
 
+### Routing Status
+
+```
+GET /v1/routing/status
+```
+
+Returns the current text-model fallback order with provider, latency, headroom,
+cooldown, and degradation reasons. This is a read-only operator endpoint for
+answering "which providers are usable right now, and what will the gateway try
+next?" without spending provider quota.
+
 ### Health
 
 ```

@@ -42,6 +42,7 @@ import type {
   Env,
   GatewayMeta,
   ModelCandidate,
+  ModelStateSnapshot,
   NormalizedChatRequest,
   Provider,
   ProviderLimitConfig,
@@ -280,6 +281,48 @@ const modelItemSchema = z.object({
   enabled: z.boolean(),
 });
 
+const routingStatusSchema = z.object({
+  ok: z.boolean(),
+  generated_at: z.string(),
+  summary: z.object({
+    configured_models: z.number(),
+    available_models: z.number(),
+    degraded_models: z.number(),
+    cooldown_models: z.number(),
+    exhausted_models: z.number(),
+    fallback_ready: z.boolean(),
+    top_provider: z.string().nullable(),
+  }),
+  fallback_order: z.array(
+    z.object({
+      rank: z.number(),
+      id: z.string(),
+      provider: z.string(),
+      model: z.string(),
+      reasoning: z.string(),
+      status: z.enum(['available', 'degraded', 'cooldown', 'exhausted']),
+      success_rate: z.number(),
+      headroom: z.number(),
+      avg_latency_ms: z.number(),
+      cooldown_until: z.number(),
+      daily_used: z.number(),
+      daily_limit: z.number(),
+      reasons: z.array(z.string()),
+    }),
+  ),
+  providers: z.record(
+    z.string(),
+    z.object({
+      configured_models: z.number(),
+      available_models: z.number(),
+      cooldown_models: z.number(),
+      exhausted_models: z.number(),
+      degraded_models: z.number(),
+      best_model: z.string().nullable(),
+    }),
+  ),
+});
+
 const healthSchema = z.object({
   ok: z.boolean(),
   models: z.array(
@@ -400,6 +443,7 @@ const EMBEDDING_MODEL_ALIASES: Record<string, string> = {
 const RATE_LIMIT_EXEMPT_GET = new Set([
   '/v1/analytics',
   '/v1/stats/providers',
+  '/v1/routing/status',
   '/v1/models',
   '/v1/dashboard',
 ]);
@@ -439,6 +483,7 @@ app.use('*', async (c, next) => {
 // token via its "Bearer token" field.
 const AUTH_EXEMPT_GET = new Set([
   '/v1/stats/providers',
+  '/v1/routing/status',
   '/v1/models',
   '/v1/dashboard',
   '/v1/budget',
@@ -2698,6 +2743,154 @@ app.get('/dashboard', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_H
 app.get('/dashboard/', (c) => c.redirect('/dashboard'));
 app.get('/live', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
 app.get('/v1/dashboard', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
+
+function routingModelStatus(snapshot: ModelStateSnapshot | undefined, now: number): 'available' | 'degraded' | 'cooldown' | 'exhausted' {
+  if (snapshot && snapshot.cooldownUntil > now) {
+    return 'cooldown';
+  }
+  if (snapshot && snapshot.headroom <= 0) {
+    return 'exhausted';
+  }
+  if (snapshot && (snapshot.successRate < 0.75 || snapshot.shortRetriableFailures > 0 || snapshot.avgLatencyMs > 5_000)) {
+    return 'degraded';
+  }
+  return 'available';
+}
+
+function routingReasons(snapshot: ModelStateSnapshot | undefined, status: ReturnType<typeof routingModelStatus>): string[] {
+  const reasons: string[] = [];
+  if (!snapshot) {
+    return ['no_health_data_yet'];
+  }
+  if (status === 'cooldown') {
+    reasons.push('in_cooldown');
+  }
+  if (status === 'exhausted') {
+    reasons.push('daily_headroom_exhausted');
+  }
+  if (snapshot.successRate < 0.75) {
+    reasons.push('low_success_rate');
+  }
+  if (snapshot.shortRetriableFailures > 0) {
+    reasons.push('recent_retriable_failures');
+  }
+  if (snapshot.avgLatencyMs > 5_000) {
+    reasons.push('high_latency');
+  }
+  if (reasons.length === 0) {
+    reasons.push('healthy');
+  }
+  return reasons;
+}
+
+const routingStatusRoute = createRoute({
+  method: 'get',
+  path: '/v1/routing/status',
+  responses: {
+    200: {
+      description: 'Operator-readable text routing and fallback status',
+      content: {
+        'application/json': {
+          schema: routingStatusSchema,
+        },
+      },
+    },
+  },
+});
+
+app.openapi(routingStatusRoute, async (c) => {
+  const now = Date.now();
+  const registry = getModelRegistry(c.env);
+  const limits = getProviderLimits(c.env);
+  const keys = registry.map((candidate) => getModelKey(candidate.provider, candidate.model));
+  const lookupLimits: Record<string, ProviderLimitConfig> = {};
+
+  for (const candidate of registry) {
+    const key = getModelKey(candidate.provider, candidate.model);
+    lookupLimits[key] = limits[key] ?? { requestsPerDay: 200 };
+  }
+
+  const stateMap = await healthLookup(c.env, keys, lookupLimits, now);
+  const evaluationMap = parseEvaluationWeights(c.env.MODEL_EVALUATIONS_JSON);
+  const selected = selectCandidates(registry, stateMap, {
+    stream: false,
+    now,
+    evaluationMap,
+  });
+  const selectedIds = new Set(selected.map((candidate) => candidate.id));
+  const fallbackCandidates = [...selected, ...registry.filter((candidate) => !selectedIds.has(candidate.id))];
+  const providers: Record<string, {
+    configured_models: number;
+    available_models: number;
+    cooldown_models: number;
+    exhausted_models: number;
+    degraded_models: number;
+    best_model: string | null;
+  }> = {};
+
+  const fallbackOrder = fallbackCandidates.map((candidate, index) => {
+    const key = getModelKey(candidate.provider, candidate.model);
+    const snapshot = stateMap.get(key);
+    const status = routingModelStatus(snapshot, now);
+    const provider = providers[candidate.provider] ?? {
+      configured_models: 0,
+      available_models: 0,
+      cooldown_models: 0,
+      exhausted_models: 0,
+      degraded_models: 0,
+      best_model: null,
+    };
+
+    provider.configured_models += 1;
+    if (status === 'available') {
+      provider.available_models += 1;
+      provider.best_model ??= candidate.id;
+    } else if (status === 'degraded') {
+      provider.degraded_models += 1;
+      provider.best_model ??= candidate.id;
+    } else if (status === 'cooldown') {
+      provider.cooldown_models += 1;
+    } else if (status === 'exhausted') {
+      provider.exhausted_models += 1;
+    }
+    providers[candidate.provider] = provider;
+
+    return {
+      rank: index + 1,
+      id: candidate.id,
+      provider: candidate.provider,
+      model: candidate.model,
+      reasoning: candidate.reasoning,
+      status,
+      success_rate: snapshot?.successRate ?? 0.5,
+      headroom: snapshot?.headroom ?? 1,
+      avg_latency_ms: snapshot?.avgLatencyMs ?? 1_500,
+      cooldown_until: snapshot?.cooldownUntil ?? 0,
+      daily_used: snapshot?.dailyUsed ?? 0,
+      daily_limit: snapshot?.dailyLimit ?? lookupLimits[key]?.requestsPerDay ?? 200,
+      reasons: routingReasons(snapshot, status),
+    };
+  });
+
+  const availableModels = fallbackOrder.filter((item) => item.status === 'available').length;
+  const degradedModels = fallbackOrder.filter((item) => item.status === 'degraded').length;
+
+  return c.json({
+    ok: true,
+    generated_at: new Date(now).toISOString(),
+    summary: {
+      configured_models: registry.length,
+      available_models: availableModels,
+      degraded_models: degradedModels,
+      cooldown_models: fallbackOrder.filter((item) => item.status === 'cooldown').length,
+      exhausted_models: fallbackOrder.filter((item) => item.status === 'exhausted').length,
+      fallback_ready: availableModels + degradedModels > 1,
+      top_provider: fallbackOrder[0]?.provider ?? null,
+    },
+    fallback_order: fallbackOrder,
+    providers,
+  });
+});
 
 const healthRoute = createRoute({
   method: 'get',
