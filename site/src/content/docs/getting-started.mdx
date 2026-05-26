@@ -35,6 +35,26 @@ Supported providers:
 - **Analytics** — per-request logging with a dashboard at `/usage`
 - **OpenAI-compatible** — works with any client that supports the OpenAI API format, including agent frameworks like LangChain, CrewAI, and Vercel AI SDK
 
+## Check Provider Status
+
+Before your first request, verify the gateway is live and see which providers are healthy — no API key needed:
+
+```bash
+curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+```
+
+You'll get a JSON list of active providers with their current latency, headroom, and cooldown state. Providers with `"degraded": false` are ready to route to. If a provider is rate-limited, the gateway auto-skips it and tries the next one.
+
+### What to expect on the free tier
+
+This gateway is best-effort — it aggregates each upstream's free tier rather than offering an SLA. Plan for these limits up front:
+
+- **Per-IP gateway limit:** ~10 requests burst, ~20 requests/minute sustained. Exceeding this returns `429`; back off and retry.
+- **Per-model daily caps:** each model has its own free-tier daily budget (see the [Models](/models) page). When a model is out of headroom or hits an upstream rate limit, the gateway cools it down and automatically falls back to the next-best capable model.
+- **`503` only when everything is degraded:** because the gateway retries across providers, you only see a `503` when every capable model is currently rate-limited. Free-tier windows usually reset within minutes — checking `/v1/routing/status` will show recovery.
+- **`model: "auto"` is not deterministic:** the gateway picks the best healthy model that matches your required capabilities (tools, JSON, vision, context). Pin a specific `model` ID if your app needs a stable backend.
+- **Need production throughput?** Bring your own provider API keys and call them directly — the free tiers are intentionally capped so this gateway can stay free for everyone.
+
 ## Quick Start
 
 Send your first request in under a minute.

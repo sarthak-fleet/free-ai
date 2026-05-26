@@ -197,6 +197,26 @@ Embeddings require an explicit model — `auto` is not supported.
 - `text-embedding-3-large`
 - `text-embedding-004`
 
+## Quick Health Check
+
+Before making your first request, verify the gateway is live and see which providers are healthy right now — no auth required:
+
+```bash
+curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+```
+
+A healthy response lists providers with their `latency`, `headroom`, and `cooldown` status. Any provider with `"degraded": false` is ready to route to. If all providers show `"degraded": true`, check back in a few minutes — the gateway auto-recovers as provider rate limits reset.
+
+### What to expect on the free tier
+
+This gateway aggregates each provider's free tier — it is **best-effort, not an SLA**. Plan for the following:
+
+- **Per-IP rate limit**: ~10 requests burst, ~20 requests/minute sustained. Bursting harder will get you `429`s — back off and retry.
+- **Per-model daily caps**: each model has a daily request budget (see the "Daily Limit" column in the model tables below). The gateway tracks remaining headroom and skips models that are out of quota.
+- **Provider hiccups are normal**: upstream free tiers throttle, time out, or briefly disappear. The gateway transparently retries across providers; the only time you see a `503` is when *every* capable model is degraded — usually clears in a few minutes as windows reset.
+- **No "exactly this model" guarantee** with `model: "auto"`: the gateway routes to the best healthy model that matches your required capabilities (tools, JSON, vision, context). Pin a specific `model` ID if you need determinism.
+- **If you need higher throughput or SLAs**: bring your own paid provider keys and call them directly — the free tiers are intentionally capped to keep the gateway free for everyone.
+
 ## API Endpoints
 
 Base URL: `https://free-ai-gateway.sarthakagrawal927.workers.dev`
@@ -217,6 +237,43 @@ curl $GATEWAY_URL/v1/chat/completions \
     "messages": [{"role": "user", "content": "Hello"}],
     "stream": false
   }'
+```
+
+**Equivalent with the OpenAI SDK (TypeScript/JavaScript):**
+
+```typescript
+import OpenAI from 'openai';
+
+const client = new OpenAI({
+  apiKey: process.env.GATEWAY_API_KEY,
+  baseURL: 'https://free-ai-gateway.sarthakagrawal927.workers.dev/v1',
+});
+
+const response = await client.chat.completions.create({
+  model: 'auto',
+  extra_body: { project_id: 'my_project' },
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+console.log(response.choices[0].message.content);
+```
+
+**Equivalent with the OpenAI SDK (Python):**
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["GATEWAY_API_KEY"],
+    base_url="https://free-ai-gateway.sarthakagrawal927.workers.dev/v1",
+)
+
+response = client.chat.completions.create(
+    model="auto",
+    extra_body={"project_id": "my_project"},
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)
 ```
 
 | Field | Type | Required | Description |
@@ -370,9 +427,31 @@ The gateway uses health-aware routing with capability filtering:
 - Force a specific provider with `X-Gateway-Force-Provider: groq` header
 - Force a specific model with `X-Gateway-Force-Model: llama-3.3-70b-versatile` header
 
+### What happens when a free provider fails?
+
+A single failing provider does not fail your request. For each call the gateway:
+
+1. Picks the best candidate model (based on success rate, latency, and remaining daily headroom).
+2. If the upstream provider returns an error, times out, or hits its free-tier rate limit, the gateway **marks that model as cooled down** and immediately retries with the next-best candidate from a different provider.
+3. The retry loop continues until a model responds successfully — or, if every capable model is degraded, the gateway returns a `503` instead of silently dropping the request.
+4. The response includes an `x_gateway.attempts` counter so you can see how many providers were tried before one succeeded.
+
+You don't need to manage per-provider keys, retries, or backoff in your app — the gateway handles all of that.
+
+**Where to check status:** the public, no-auth endpoint `GET /v1/routing/status` returns the live fallback order with each provider's `latency`, `headroom`, `cooldown`, and `degraded` flag. If everything looks degraded, providers usually recover within a few minutes as their rate-limit windows reset.
+
+```bash
+curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+```
+
 ## Rate Limits
 
-IP-based rate limiting: 10 requests burst, ~20 requests/minute sustained.
+The gateway enforces two layers of limits, both designed to keep the free tier usable for everyone:
+
+- **Per-IP gateway limit** — token bucket: **10 requests burst, ~20 requests/minute sustained**. Excess requests return `429 Too Many Requests`; wait a few seconds and retry.
+- **Per-model daily caps** — each upstream provider has its own free-tier quota (see the "Daily Limit" column in the model tables above). When a model is out of headroom or returns a rate-limit error, the gateway cools it down and falls back to the next-best capable model automatically. You only see a `503` when every capable model is degraded.
+
+**Rule of thumb:** treat this as a development / hobby / prototyping gateway. If you need predictable production throughput, pin a specific model and bring your own provider keys.
 
 ## Development
 
@@ -387,3 +466,22 @@ pnpm dev:local
 ```bash
 pnpm wrangler deploy
 ```
+
+<!-- ACTIVE-AI-TASK-LOG:START -->
+## Active AI Task Log
+
+This section is maintained by the SaaS Maker Active-AI product/design loop so future agents do not reopen duplicate UI tasks.
+
+- Business lane: P1 Explore
+- Rule: do not create another broad "improve the UI" task unless the acceptance criteria differ materially from the tasks listed here.
+- Source of truth for task status: SaaS Maker task board. README entries are durable context only.
+
+| Task | Status | Priority | Last known note |
+| --- | --- | --- | --- |
+| `2e1f9b66` free-ai: add public landing + obvious 'Get API key' CTA + quickstart | done | medium | 2026-05-25 17:02:56 |
+| `fa8b0311` free-ai: add provider status proof to landing quickstart | done | medium | 2026-05-26 — added health check block + routing status curl to README and getting-started docs |
+| `95674068` free-ai: add fallback provider explanation | done | medium | 2026-05-26 — added "What happens when a free provider fails?" explainer to README Provider Routing section, covering cooldown/retry behavior, `x_gateway.attempts`, and the `/v1/routing/status` check |
+| `3d7d9a34` free-ai: add rate-limit expectation copy | done | medium | 2026-05-26 — added "What to expect on the free tier" callout near Quick Health Check, expanded Rate Limits section with the two-layer model, and added a free-tier note under the getting-started "Check Provider Status" block and the landing-page quickstart card |
+| `ac9adb19` free-ai: add curl-to-SDK quickstart bridge | done | medium | 2026-05-26 — added TypeScript + Python SDK snippets after the curl Chat Completions example in README; added a "terminal / openai sdk" tab switcher to the landing-page code window in index.astro (no new dependencies) |
+| `b26c3e9d` free-ai: add saved-cost and reliability proof strip | done | medium | 2026-05-26 — added `.proof-strip` section to index.astro between hero and features: shows live free-requests count (fetched from public `/v1/stats/providers`), 8+ provider fallback chain, and estimated cost saved vs. GPT-4o mini pricing; no backend changes |
+<!-- ACTIVE-AI-TASK-LOG:END -->

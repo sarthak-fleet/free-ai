@@ -98,7 +98,8 @@ const rb = '}';
       .code-dot:first-child{background:#ef4444;opacity:.7}
       .code-dot:nth-child(2){background:#f59e0b;opacity:.7}
       .code-dot:nth-child(3){background:#10b981;opacity:.7}
-      .code-tab{margin-left:.75rem;font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);padding:.2rem .6rem;border-radius:4px;background:rgba(255,255,255,.04)}
+      .code-tab{margin-left:.75rem;font-family:var(--font-mono);font-size:.7rem;color:var(--text-muted);padding:.2rem .6rem;border-radius:4px;background:rgba(255,255,255,.04);cursor:pointer;transition:color .15s,background .15s}
+      .code-tab.active{color:var(--text);background:rgba(255,255,255,.1)}
       .code-body{padding:1.25rem 1.5rem;font-family:var(--font-mono);font-size:.78rem;line-height:1.85;overflow-x:auto;color:var(--text-secondary);white-space:pre}
       .code-body .cm{color:var(--text-muted);font-style:italic}
       .code-body .cmd{color:var(--emerald)}
@@ -107,6 +108,16 @@ const rb = '}';
       .code-body .str{color:#a78bfa}
       .code-body .key{color:#f472b6}
       .code-body .val{color:#34d399}
+
+      .proof-strip{background:var(--bg-raised);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:2rem 2rem}
+      .proof-inner{display:flex;justify-content:center;align-items:center;max-width:860px;margin:0 auto}
+      .proof-item{flex:1;text-align:center;padding:0 2rem}
+      .proof-num{font-family:var(--font-mono);font-size:2rem;font-weight:500;color:var(--text);letter-spacing:-.04em;line-height:1}
+      .proof-accent{color:var(--emerald)}
+      .proof-label{font-size:.75rem;font-weight:600;color:var(--text-secondary);margin-top:.4rem;letter-spacing:.01em}
+      .proof-sub{font-size:.65rem;color:var(--text-muted);margin-top:.2rem}
+      .proof-divider{width:1px;height:48px;background:var(--border);flex-shrink:0}
+      @media(max-width:600px){.proof-inner{flex-direction:column;gap:1.5rem}.proof-divider{width:48px;height:1px}}
 
       .footer{border-top:1px solid var(--border);padding:3rem 2rem;max-width:1080px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start}
       .footer-brand{display:flex;align-items:center;gap:.5rem;font-weight:600;font-size:.85rem;color:var(--text);margin-bottom:.5rem}
@@ -209,6 +220,28 @@ const rb = '}';
       </div>
     </section>
 
+    <section class="proof-strip">
+      <div class="proof-inner">
+        <div class="proof-item">
+          <div class="proof-num" id="proof-requests"><span class="proof-accent">—</span></div>
+          <div class="proof-label">Free requests routed</div>
+          <div class="proof-sub">$0 in provider API costs</div>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-item">
+          <div class="proof-num"><span class="proof-accent">8+</span></div>
+          <div class="proof-label">Provider fallback chain</div>
+          <div class="proof-sub">Auto-skips throttled or failed providers</div>
+        </div>
+        <div class="proof-divider"></div>
+        <div class="proof-item">
+          <div class="proof-num" id="proof-savings"><span class="proof-accent">$0</span></div>
+          <div class="proof-label">vs. GPT-4o mini pricing</div>
+          <div class="proof-sub">Paid APIs charge ~$0.30/1K requests</div>
+        </div>
+      </div>
+    </section>
+
     <section class="features-section">
       <div class="section-label afu d1">Capabilities</div>
       <div class="section-title afu d2">Everything you need for resilient AI inference</div>
@@ -267,6 +300,11 @@ const rb = '}';
           Set <code>model: "auto"</code>
           and the gateway handles provider selection, retries, and failover.
         </p>
+        <p style="font-size:.78rem;color:var(--text-muted);margin-top:-.5rem">
+          Heads up: this aggregates free provider tiers — best-effort, no SLA.
+          Per-IP limit is ~10 burst / ~20 rpm, each model has a daily cap, and the gateway returns <code>503</code> only when every capable model is rate-limited (usually clears within minutes).
+          For production throughput, pin a model and bring your own keys.
+        </p>
         <a class="btn btn-primary" href="/getting-started" style="margin-top: 0.5rem;">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h12v10H2z"/><path d="M2 6h12"/></svg>
           Full API reference
@@ -277,10 +315,14 @@ const rb = '}';
           <span class="code-dot"></span>
           <span class="code-dot"></span>
           <span class="code-dot"></span>
-          <span class="code-tab">terminal</span>
+          <span class="code-tab active" data-panel="curl">terminal</span>
+          <span class="code-tab" data-panel="sdk">openai sdk</span>
         </div>
-        <div class="code-body"><span class="cm"># Chat completion</span>
-<span class="cmd">curl</span> <span class="url">https://your-gateway.workers.dev/v1/chat/completions</span> \
+        <div id="panel-curl" class="code-body"><span class="cm"># 1. Check which providers are live right now (no key needed)</span>
+<span class="cmd">curl</span> <span class="url">{gw}/v1/routing/status</span>
+
+<span class="cm"># 2. Send your first chat completion</span>
+<span class="cmd">curl</span> <span class="url">{gw}/v1/chat/completions</span> \
   <span class="fl">-H</span> <span class="str">"Authorization: Bearer $KEY"</span> \
   <span class="fl">-H</span> <span class="str">"Content-Type: application/json"</span> \
   <span class="fl">-d</span> <span class="str">'{lb}
@@ -292,14 +334,71 @@ const rb = '}';
 {rb}'</span>
 
 <span class="cm"># Embeddings</span>
-<span class="cmd">curl</span> <span class="url">https://your-gateway.workers.dev/v1/embeddings</span> \
+<span class="cmd">curl</span> <span class="url">{gw}/v1/embeddings</span> \
   <span class="fl">-H</span> <span class="str">"Authorization: Bearer $KEY"</span> \
   <span class="fl">-H</span> <span class="str">"Content-Type: application/json"</span> \
   <span class="fl">-d</span> <span class="str">'{lb}
   <span class="key">"model"</span>: <span class="val">"@cf/baai/bge-base-en-v1.5"</span>,
   <span class="key">"input"</span>: <span class="val">"Hello world"</span>
 {rb}'</span></div>
+        <div id="panel-sdk" class="code-body" style="display:none"><span class="cm">// npm install openai  (already installed if you use OpenAI SDK)</span>
+<span class="key">import</span> <span class="val">OpenAI</span> <span class="key">from</span> <span class="str">'openai'</span>;
+
+<span class="key">const</span> <span class="val">client</span> = <span class="key">new</span> <span class="val">OpenAI</span>({lb}
+  <span class="key">baseURL</span>: <span class="str">'{gw}/v1'</span>,
+  <span class="key">apiKey</span>: process.env.<span class="val">GATEWAY_API_KEY</span>,
+{rb});
+
+<span class="cm">// Chat completion — same params as OpenAI</span>
+<span class="key">const</span> <span class="val">chat</span> = <span class="key">await</span> client.chat.completions.<span class="cmd">create</span>({lb}
+  <span class="key">model</span>: <span class="str">'auto'</span>,
+  <span class="key">extra_body</span>: {lb} <span class="key">project_id</span>: <span class="str">'my_project'</span> {rb},
+  <span class="key">messages</span>: [{lb} <span class="key">role</span>: <span class="str">'user'</span>, <span class="key">content</span>: <span class="str">'Hello!'</span> {rb}],
+{rb});
+console.<span class="cmd">log</span>(chat.choices[0].message.content);
+
+<span class="cm">// Embeddings</span>
+<span class="key">const</span> <span class="val">emb</span> = <span class="key">await</span> client.embeddings.<span class="cmd">create</span>({lb}
+  <span class="key">model</span>: <span class="str">'gemini-embedding-001'</span>,
+  <span class="key">input</span>: <span class="str">'Hello world'</span>,
+{rb});
+console.<span class="cmd">log</span>(emb.data[0].embedding.length + <span class="str">' dims'</span>);</div>
       </div>
+      <script>
+        document.querySelectorAll('.code-tab[data-panel]').forEach(function(t) {
+          t.addEventListener('click', function() {
+            document.querySelectorAll('.code-tab[data-panel]').forEach(function(x) { x.classList.remove('active'); });
+            t.classList.add('active');
+            document.querySelectorAll('#panel-curl,#panel-sdk').forEach(function(p) { p.style.display = 'none'; });
+            document.getElementById('panel-' + t.dataset.panel).style.display = 'block';
+          });
+        });
+      </script>
+      <script>
+        (function() {
+          fetch('https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/stats/providers')
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+              if (!data || !data.stats) return;
+              var total = data.stats.reduce(function(s, p) { return s + (p.total_attempts || 0); }, 0);
+              if (total < 1) return;
+              var rEl = document.getElementById('proof-requests');
+              var sEl = document.getElementById('proof-savings');
+              if (rEl) rEl.innerHTML = '<span class="proof-accent">' + total.toLocaleString() + '</span>';
+              if (sEl) {
+                // GPT-4o mini blended: ~$0.30 per 1 000 requests (500 in + 300 out tokens avg)
+                var dollars = total * 0.0003;
+                var text = dollars < 0.01
+                  ? '$0'
+                  : dollars < 1
+                    ? Math.round(dollars * 100) + '¢'
+                    : '$' + dollars.toFixed(2);
+                sEl.innerHTML = '<span class="proof-accent">' + text + ' saved</span>';
+              }
+            })
+            .catch(function() {});
+        })();
+      </script>
     </section>
 
     <footer class="footer">
