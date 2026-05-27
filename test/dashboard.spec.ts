@@ -44,7 +44,8 @@ describe('Dashboard HTML routes', () => {
 
     expect(html).toContain('Group: Project ID');
     expect(html).toContain('Timeline — Successful vs Failed (weekly)');
-    expect(html).toContain('<th>Samples</th><th>Success</th><th>Avg</th><th>P90</th><th>P99</th>');
+    expect(html).toContain('Gateway success');
+    expect(html).toContain('<th>Samples</th><th>Upstream success</th><th>Avg</th><th>P90</th><th>P99</th>');
     expect(html).toContain('Usage analytics are public');
     expect(html).toContain('/v1/analytics?days=');
     expect(html).toContain('/v1/routing/status');

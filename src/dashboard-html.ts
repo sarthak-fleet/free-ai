@@ -198,7 +198,7 @@ export const DASHBOARD_HTML = `<!doctype html>
   <div id="mainView">
     <div class="kpis">
       <div class="kpi"><div class="label">Total requests</div><div class="value" id="kpiTotal">0</div><div class="sub" id="kpiTotalSub">—</div></div>
-      <div class="kpi good"><div class="label">Success rate</div><div class="value" id="kpiSuccess">0%</div><div class="sub" id="kpiSuccessSub">—</div></div>
+      <div class="kpi good"><div class="label">Gateway success</div><div class="value" id="kpiSuccess">0%</div><div class="sub" id="kpiSuccessSub">—</div></div>
       <div class="kpi bad"><div class="label">Failed</div><div class="value" id="kpiFailed">0</div><div class="sub" id="kpiFailedSub">—</div></div>
       <div class="kpi"><div class="label">Active models</div><div class="value" id="kpiActive">0</div><div class="sub" id="kpiActiveSub">—</div></div>
     </div>
@@ -221,7 +221,7 @@ export const DASHBOARD_HTML = `<!doctype html>
       <h2>Routing fallback order</h2>
       <table>
         <thead><tr>
-          <th>Rank</th><th>Model</th><th>Provider</th><th>Status</th><th>Success</th><th>Reasons</th>
+          <th>Rank</th><th>Model</th><th>Provider</th><th>Status</th><th>Upstream success</th><th>Reasons</th>
         </tr></thead>
         <tbody id="routingBody"></tbody>
       </table>
@@ -274,7 +274,7 @@ export const DASHBOARD_HTML = `<!doctype html>
       <h2>Live model health</h2>
       <table>
         <thead><tr>
-          <th>Key</th><th>Samples</th><th>Success</th><th>Avg</th><th>P90</th><th>P99</th>
+          <th>Key</th><th>Samples</th><th>Upstream success</th><th>Avg</th><th>P90</th><th>P99</th>
           <th>Daily usage</th><th>Status</th>
         </tr></thead>
         <tbody id="healthBody"></tbody>
@@ -515,20 +515,33 @@ export const DASHBOARD_HTML = `<!doctype html>
 
   function renderAnalyticsKpis(analytics, healthItems, activeModels) {
     const total = analytics.total_requests || 0;
+    const upstream = upstreamSuccess(healthItems);
+    const gatewaySuccess = analytics.success_rate || 0;
     $('kpiTotal').textContent = fmt(total);
     $('kpiTotalSub').textContent = 'last ' + state.days + 'd';
-    $('kpiSuccess').textContent = pct(analytics.success_rate || 0);
+    $('kpiSuccess').textContent = pct(gatewaySuccess);
     $('kpiSuccessSub').textContent = fmt(analytics.successful_requests) + ' ok';
     $('kpiFailed').textContent = fmt(analytics.failed_requests);
     $('kpiFailedSub').textContent = total > 0 ? pct((analytics.failed_requests || 0) / total) + ' of total' : '—';
-    $('kpiActive').textContent = activeModels;
-    $('kpiActiveSub').textContent = healthItems.length + ' registered';
+    $('kpiActive').textContent = gatewaySuccess >= 0.99 && upstream < 0.95 ? 'Working' : 'Ready';
+    $('kpiActiveSub').textContent = 'upstream ' + pct(upstream) + ' · ' + activeModels + ' active';
     $('kpiSuccess').parentElement.className = 'kpi good';
     $('kpiFailed').parentElement.className = 'kpi bad';
     $('kpiTotal').parentElement.querySelector('.label').textContent = 'Total requests';
-    $('kpiSuccess').parentElement.querySelector('.label').textContent = 'Success rate';
-    $('kpiFailed').parentElement.querySelector('.label').textContent = 'Failed';
-    $('kpiActive').parentElement.querySelector('.label').textContent = 'Active models';
+    $('kpiSuccess').parentElement.querySelector('.label').textContent = 'Gateway success';
+    $('kpiFailed').parentElement.querySelector('.label').textContent = 'Gateway failed';
+    $('kpiActive').parentElement.querySelector('.label').textContent = 'Fallback';
+  }
+
+  function upstreamSuccess(healthItems) {
+    let attempts = 0;
+    let successes = 0;
+    for (const item of healthItems || []) {
+      const n = item.attempts || 0;
+      attempts += n;
+      successes += n * (item.success_rate || 0);
+    }
+    return attempts > 0 ? successes / attempts : 1;
   }
 
   function renderRoutingKpis(routing) {
