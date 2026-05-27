@@ -113,7 +113,7 @@ export interface ModelStateSnapshot {
   cooldownUntil: number;
   headroom: number;
   dailyUsed: number;
-  dailyLimit: number;
+  dailyLimit: number | null;
   shortRetriableFailures: number;
 }
 

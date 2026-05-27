@@ -80,8 +80,8 @@ function toSnapshot(
     (item) => !item.success && item.failureClass === 'usage_retriable',
   ).length;
 
-  const dailyLimit = limitConfig?.requestsPerDay ?? 1;
-  const headroom = Math.max(0, 1 - state.dailyUsed / dailyLimit);
+  const dailyLimit = limitConfig?.requestsPerDay ?? null;
+  const headroom = dailyLimit === null ? 1 : Math.max(0, 1 - state.dailyUsed / dailyLimit);
 
   return {
     key,

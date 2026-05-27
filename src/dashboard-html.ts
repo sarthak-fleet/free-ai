@@ -562,7 +562,9 @@ export const DASHBOARD_HTML = `<!doctype html>
     for (const item of fallbackOrder) {
       const p = capacity[item.provider] || { used: 0, limit: 0 };
       p.used += item.daily_used || 0;
-      p.limit += item.daily_limit || 0;
+      if (typeof item.daily_limit === 'number' && item.daily_limit > 0) {
+        p.limit += item.daily_limit;
+      }
       capacity[item.provider] = p;
     }
 
@@ -713,9 +715,11 @@ export const DASHBOARD_HTML = `<!doctype html>
       const rate = m.success_rate ?? 0;
       const rateCls = m.attempts > 0 ? (rate >= 0.95 ? 'ok' : rate >= 0.8 ? 'warn' : 'err') : 'mute';
       const used = m.daily_used || 0;
-      const limit = m.daily_limit || 0;
-      const usageRatio = limit > 0 ? used / limit : 0;
+      const limit = m.daily_limit;
+      const hasLimit = typeof limit === 'number' && limit > 0;
+      const usageRatio = hasLimit ? used / limit : 0;
       const barCls = usageRatio >= 0.9 ? 'danger' : usageRatio >= 0.7 ? 'warn' : '';
+      const usageLabel = hasLimit ? fmt(used) + ' / ' + fmt(limit) : fmt(used) + ' today';
       const cooldown = (m.cooldown_until || 0) > now;
       const cooldownSec = cooldown ? Math.ceil((m.cooldown_until - now) / 1000) : 0;
       const statusBadge = cooldown
@@ -728,7 +732,7 @@ export const DASHBOARD_HTML = `<!doctype html>
         '<td><span class="badge ' + rateCls + '">' + (m.attempts > 0 ? pct(rate) : '—') + '</span></td>' +
         '<td>' + ms(m.avg_latency_ms) + '</td>' +
         '<td><div class="progress ' + barCls + '"><div style="width:' + Math.min(100, usageRatio * 100).toFixed(1) + '%"></div></div>' +
-          '<div class="progress-label">' + fmt(used) + (limit > 0 ? ' / ' + fmt(limit) : '') + '</div></td>' +
+          '<div class="progress-label">' + usageLabel + '</div></td>' +
         '<td>' + statusBadge + '</td>';
       tb.appendChild(tr);
     }

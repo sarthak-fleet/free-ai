@@ -360,7 +360,7 @@ const healthSchema = z.object({
       cooldown_until: z.number(),
       headroom: z.number(),
       daily_used: z.number(),
-      daily_limit: z.number(),
+      daily_limit: z.number().nullable(),
     }),
   ),
 });
