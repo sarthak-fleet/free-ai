@@ -499,16 +499,13 @@ app.use('*', async (c, next) => {
 });
 
 // ── API key authentication on all /v1 mutation endpoints ───────────
-// GATEWAY_API_KEY must be set as a wrangler secret in production. Fail closed
-// for token-spending routes if it is missing; otherwise a misconfigured deploy
-// would silently become public.
+// GATEWAY_API_KEY must be set as a wrangler secret in production. Additional
+// hashed keys can be supplied through GATEWAY_API_KEY_HASHES. Fail closed for
+// token-spending routes if no gateway auth secret is configured; otherwise a
+// misconfigured deploy would silently become public.
 //
-// `/v1/analytics` is intentionally NOT exempt: it exposes per-provider /
-// per-project request volume and health, which is operational data the owner
-// should not publish. It requires a `GATEWAY_API_KEY` Bearer token like the
-// mutation endpoints. The owner dashboard (`/dashboard`) already sends the
-// token via its "Bearer token" field.
 const AUTH_EXEMPT_GET = new Set([
+  '/v1/analytics',
   '/v1/stats/providers',
   '/v1/routing/status',
   '/v1/routing/config',
@@ -521,7 +518,7 @@ app.use('/v1/*', async (c, next) => {
   const isExemptGet = c.req.method === 'GET' && AUTH_EXEMPT_GET.has(new URL(c.req.url).pathname);
 
   if (!isExemptGet) {
-    if (!c.env.GATEWAY_API_KEY) {
+    if (!isGatewayAuthConfigured(c.env)) {
       capture({
         distinctId: 'free-ai',
         event: 'foundry_auth_failure',
@@ -544,9 +541,8 @@ app.use('/v1/*', async (c, next) => {
       ? authHeader.slice(7)
       : c.req.header('x-api-key') ?? '';
 
-    // Constant-time comparison to prevent timing attacks
-    const expected = c.env.GATEWAY_API_KEY;
-    if (providedKey.length !== expected.length || !isConstantTimeEqual(providedKey, expected)) {
+    const isValidKey = await isValidGatewayApiKey(providedKey, c.env);
+    if (!isValidKey) {
       capture({
         distinctId: 'free-ai',
         event: 'foundry_auth_failure',
@@ -722,6 +718,50 @@ function buildChatRoundRobinKey(params: {
 }): string {
   const providerSet = params.candidates.map((candidate) => getModelKey(candidate.provider, candidate.model)).join(',');
   return `chat:${params.endpoint}:${params.min_reasoning_level ?? 'auto'}:${params.stream ? 'stream' : 'nonstream'}:${providerSet}`;
+}
+
+function isGatewayAuthConfigured(env: Env): boolean {
+  return Boolean(env.GATEWAY_API_KEY || parseGatewayApiKeyHashes(env.GATEWAY_API_KEY_HASHES).length > 0);
+}
+
+async function isValidGatewayApiKey(providedKey: string, env: Env): Promise<boolean> {
+  if (!providedKey) {
+    return false;
+  }
+
+  const legacyKey = env.GATEWAY_API_KEY;
+  if (legacyKey && providedKey.length === legacyKey.length && isConstantTimeEqual(providedKey, legacyKey)) {
+    return true;
+  }
+
+  const expectedHashes = parseGatewayApiKeyHashes(env.GATEWAY_API_KEY_HASHES);
+  if (expectedHashes.length === 0) {
+    return false;
+  }
+
+  const providedHash = await sha256Hex(providedKey);
+  return expectedHashes.some((expectedHash) => isConstantTimeEqual(providedHash, expectedHash));
+}
+
+function parseGatewayApiKeyHashes(raw: string | undefined): string[] {
+  if (!raw) {
+    return [];
+  }
+
+  return raw
+    .split(/[,\n]+/)
+    .map((entry) => entry.trim())
+    .map((entry) => {
+      const separatorIndex = entry.lastIndexOf(':');
+      return separatorIndex === -1 ? entry : entry.slice(separatorIndex + 1).trim();
+    })
+    .filter((hash) => /^[a-f0-9]{64}$/i.test(hash))
+    .map((hash) => hash.toLowerCase());
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /** Constant-time string comparison — prevents timing oracle on API key checks. */
@@ -3010,14 +3050,10 @@ const analyticsRoute = createRoute({
       content: { 'application/json': { schema: analyticsResponseSchema } },
     },
     400: { description: 'Bad Request' },
-    401: { description: 'Unauthorized' },
   },
 });
 
 app.openapi(analyticsRoute, async (c) => {
-  // Auth is enforced by the `/v1/*` middleware — `/v1/analytics` is not in
-  // AUTH_EXEMPT_GET, so a valid GATEWAY_API_KEY Bearer token is required to
-  // reach this handler. It exposes provider/project load, so it is not public.
   const query = c.req.valid('query');
   const projectId = query.project_id;
   const days = query.days;

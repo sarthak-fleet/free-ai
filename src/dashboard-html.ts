@@ -43,7 +43,6 @@ export const DASHBOARD_HTML = `<!doctype html>
     border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit;
     outline: none; transition: border-color .15s;
   }
-  .topbar input { width: 220px; font-family: var(--mono); }
   .topbar input:focus, .topbar select:focus { border-color: var(--accent); }
   .topbar button { cursor: pointer; }
   .topbar button:hover { border-color: var(--accent); }
@@ -57,11 +56,6 @@ export const DASHBOARD_HTML = `<!doctype html>
   .banner.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
   .banner.info { background: rgba(124, 92, 255, 0.1); border: 1px solid rgba(124, 92, 255, 0.35); color: #c4b5fd; }
   .banner.info code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); color: var(--text); }
-  .locked-panel { position: relative; }
-  .locked-panel .locked-overlay { position: absolute; inset: 0; display: flex; align-items: center;
-    justify-content: center; text-align: center; padding: 24px; border-radius: var(--radius);
-    background: rgba(10, 10, 11, 0.82); border: 1px dashed var(--border); color: var(--muted); font-size: 13px; z-index: 2; }
-  .locked-panel .locked-overlay strong { display: block; color: var(--text); margin-bottom: 6px; font-weight: 600; }
 
   .empty-state { padding: 60px 20px; text-align: center; color: var(--muted);
     background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); }
@@ -82,7 +76,7 @@ export const DASHBOARD_HTML = `<!doctype html>
   @media (max-width: 960px) {
     .grid-2 { grid-template-columns: 1fr; }
     .kpis { grid-template-columns: repeat(2, 1fr); }
-    .topbar input { width: 100%; }
+    .topbar select, .topbar button { width: 100%; }
   }
 
   .card { background: var(--surface); border: 1px solid var(--border);
@@ -140,12 +134,12 @@ export const DASHBOARD_HTML = `<!doctype html>
   .pill-ok { background: rgba(34,197,94,0.15); color: var(--success); }
   .pill-warn { background: rgba(245,158,11,0.15); color: var(--warn); }
   .pill-err { background: rgba(239,68,68,0.15); color: var(--danger); }
-  .lab-grid { display: grid; grid-template-columns: 180px 1fr 1fr auto; gap: 10px; align-items: start; }
+  .lab-grid { display: grid; grid-template-columns: 160px 1fr 1fr 1fr auto; gap: 10px; align-items: start; }
   .lab-grid input, .lab-grid select, .lab-grid textarea, .lab-grid button {
     width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
     border-radius: 6px; padding: 9px 10px; font-size: 12px; font-family: inherit; outline: none;
   }
-  .lab-grid textarea { grid-column: 1 / 4; min-height: 130px; resize: vertical; font-family: var(--mono); }
+  .lab-grid textarea { grid-column: 1 / 5; min-height: 130px; resize: vertical; font-family: var(--mono); }
   .lab-grid button { cursor: pointer; white-space: nowrap; }
   .lab-grid button:hover { border-color: var(--accent); }
   .lab-result { margin-top: 12px; padding: 12px; min-height: 90px; background: var(--surface-2);
@@ -177,7 +171,11 @@ export const DASHBOARD_HTML = `<!doctype html>
   <div class="topbar">
     <h1><span class="dot"></span>Free AI Gateway — Live</h1>
     <div class="spacer"></div>
-    <input id="apiKey" type="password" placeholder="GATEWAY_API_KEY (Bearer token)" autocomplete="off" />
+    <select id="groupBySel" title="Breakdown grouping">
+      <option value="providers" selected>Group: Provider</option>
+      <option value="models">Group: Model</option>
+      <option value="projects">Group: Project ID</option>
+    </select>
     <select id="rangeSel">
       <option value="1">1d</option>
       <option value="7" selected>7d</option>
@@ -194,7 +192,7 @@ export const DASHBOARD_HTML = `<!doctype html>
 
   <div id="emptyState" class="empty-state" style="display:none">
     <div style="font-size:15px;color:var(--text);margin-bottom:6px;">No traffic yet</div>
-    Hit <code>/v1/chat/completions</code> with an <code>x-project-id</code> header to start seeing data.
+    Hit <code>/v1/chat/completions</code> with an <code>x-gateway-project-id</code> header to start seeing data.
   </div>
 
   <div id="mainView">
@@ -208,12 +206,12 @@ export const DASHBOARD_HTML = `<!doctype html>
     <div id="providerCards" class="pcards" style="display:none"></div>
 
     <div class="grid grid-2" id="analyticsCharts">
-      <div class="card locked-panel" id="timelineCard">
+      <div class="card" id="timelineCard">
         <h2>Timeline — Successful vs Failed (per day)</h2>
         <div class="chart-wrap"><canvas id="chartTimeline"></canvas></div>
       </div>
-      <div class="card locked-panel" id="providersCard">
-        <h2>Provider breakdown</h2>
+      <div class="card" id="providersCard">
+        <h2 id="breakdownTitle">Provider breakdown</h2>
         <div class="chart-wrap"><canvas id="chartProviders"></canvas></div>
         <div id="providerBadges" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
@@ -259,6 +257,7 @@ export const DASHBOARD_HTML = `<!doctype html>
         </select>
         <input id="replayModel" placeholder="model or auto" value="auto" />
         <input id="replayProject" placeholder="project_id" value="replay-lab" />
+        <input id="replayApiKey" type="password" placeholder="API key for replay" autocomplete="off" />
         <button id="replayBtn">Replay</button>
         <textarea id="replayPayload" spellcheck="false">{
   "messages": [
@@ -283,16 +282,16 @@ export const DASHBOARD_HTML = `<!doctype html>
     </div>
 
     <div class="grid grid-2" id="analyticsTables">
-      <div class="card locked-panel" id="topModelsCard">
-        <h2>Top 10 models</h2>
+      <div class="card" id="topModelsCard">
+        <h2 id="topBreakdownTitle">Top 10 models</h2>
         <table>
           <thead><tr>
-            <th>Model</th><th>Requests</th><th>Success</th><th>Failed</th>
+            <th id="topBreakdownLabel">Model</th><th>Requests</th><th>Success</th><th>Failed</th>
           </tr></thead>
           <tbody id="topModelsBody"></tbody>
         </table>
       </div>
-      <div class="card locked-panel" id="projectsCard">
+      <div class="card" id="projectsCard">
         <h2>Projects</h2>
         <table>
           <thead><tr>
@@ -330,28 +329,33 @@ export const DASHBOARD_HTML = `<!doctype html>
   const ms = (n) => (n > 0 ? Math.round(n) + ' ms' : '—');
 
   const state = {
-    apiKey: localStorage.getItem('freeai.apiKey') || '',
     days: Number(localStorage.getItem('freeai.days') || 7),
+    groupBy: localStorage.getItem('freeai.groupBy') || 'providers',
+    replayApiKey: localStorage.getItem('freeai.replayApiKey') || '',
     autoRefresh: localStorage.getItem('freeai.autoRefresh') !== 'false',
     charts: { timeline: null, providers: null },
     inFlight: null,
     timer: null,
-    analyticsAuthed: false,
   };
 
-  $('apiKey').value = state.apiKey;
   $('rangeSel').value = String(state.days);
+  $('groupBySel').value = state.groupBy;
+  $('replayApiKey').value = state.replayApiKey;
   $('autoRefresh').checked = state.autoRefresh;
 
-  $('apiKey').addEventListener('change', (e) => {
-    state.apiKey = e.target.value.trim();
-    localStorage.setItem('freeai.apiKey', state.apiKey);
-    refresh();
-  });
   $('rangeSel').addEventListener('change', (e) => {
     state.days = Number(e.target.value);
     localStorage.setItem('freeai.days', String(state.days));
     refresh();
+  });
+  $('groupBySel').addEventListener('change', (e) => {
+    state.groupBy = e.target.value;
+    localStorage.setItem('freeai.groupBy', state.groupBy);
+    refresh();
+  });
+  $('replayApiKey').addEventListener('change', (e) => {
+    state.replayApiKey = e.target.value.trim();
+    localStorage.setItem('freeai.replayApiKey', state.replayApiKey);
   });
   $('autoRefresh').addEventListener('change', (e) => {
     state.autoRefresh = e.target.checked;
@@ -371,33 +375,18 @@ export const DASHBOARD_HTML = `<!doctype html>
     b.classList.add('show');
   }
 
-  function showAuthBanner(required) {
+  function showAnalyticsBanner(visible) {
     const b = $('authBanner');
-    if (!required) { b.classList.remove('show'); b.innerHTML = ''; return; }
+    if (!visible) { b.classList.remove('show'); b.innerHTML = ''; return; }
     b.innerHTML =
-      '<strong>Usage analytics require credentials.</strong> '
-      + 'Paste your <code>GATEWAY_API_KEY</code> as a Bearer token in the field above to unlock request volume, '
-      + 'timeline charts, and project breakdown. Model health, routing status, and provider throttle stats below are public.';
+      '<strong>Usage analytics are public.</strong> '
+      + 'The dashboard reads aggregate request volume from <code>/v1/analytics</code> without a token. '
+      + 'Use the grouping control to switch provider, model, or project-id breakdowns.';
     b.classList.add('show');
   }
 
-  function setAnalyticsLocked(locked) {
-    const msg =
-      '<div class="locked-overlay"><div><strong>Analytics locked</strong>'
-      + 'Add your <code style="font-family:var(--mono);color:var(--text)">GATEWAY_API_KEY</code> Bearer token above to view this panel.</div></div>';
-    for (const id of ['timelineCard', 'providersCard', 'topModelsCard', 'projectsCard']) {
-      const card = $(id);
-      const existing = card.querySelector('.locked-overlay');
-      if (locked) {
-        if (!existing) card.insertAdjacentHTML('beforeend', msg);
-      } else if (existing) {
-        existing.remove();
-      }
-    }
-  }
-
   function authHeaders() {
-    return state.apiKey ? { Authorization: 'Bearer ' + state.apiKey } : {};
+    return state.replayApiKey ? { Authorization: 'Bearer ' + state.replayApiKey } : {};
   }
 
   async function replayRequest() {
@@ -433,12 +422,11 @@ export const DASHBOARD_HTML = `<!doctype html>
   }
 
   async function fetchData(signal) {
-    const headers = authHeaders();
     const [healthRes, statsRes, routingRes, analyticsRes] = await Promise.all([
       fetch('/health', { signal }),
       fetch('/v1/stats/providers', { signal }).catch(() => null),
       fetch('/v1/routing/status', { signal }).catch(() => null),
-      fetch('/v1/analytics?days=' + state.days, { headers, signal }),
+      fetch('/v1/analytics?days=' + state.days, { signal }),
     ]);
 
     if (!healthRes.ok) {
@@ -456,20 +444,13 @@ export const DASHBOARD_HTML = `<!doctype html>
     }
 
     let analytics = null;
-    let authRequired = false;
     if (!analyticsRes.ok) {
-      const authStatus = analyticsRes.status === 401 || analyticsRes.status === 403
-        || (analyticsRes.status === 503 && !state.apiKey);
-      if (!state.apiKey && authStatus) {
-        authRequired = true;
-      } else {
-        throw new Error('Analytics ' + analyticsRes.status + ': ' + (await analyticsRes.text()).slice(0, 200));
-      }
+      throw new Error('Analytics ' + analyticsRes.status + ': ' + (await analyticsRes.text()).slice(0, 200));
     } else {
       analytics = await analyticsRes.json();
     }
 
-    return { health, providerStats, routing, analytics, authRequired };
+    return { health, providerStats, routing, analytics };
   }
 
   async function refresh() {
@@ -477,17 +458,16 @@ export const DASHBOARD_HTML = `<!doctype html>
     const ctrl = new AbortController();
     state.inFlight = ctrl;
     try {
-      const { health, providerStats, routing, analytics, authRequired } = await fetchData(ctrl.signal);
+      const { health, providerStats, routing, analytics } = await fetchData(ctrl.signal);
       state.inFlight = null;
-      state.analyticsAuthed = !authRequired && analytics != null;
-      render({ analytics, health, providerStats, routing, authRequired });
+      render({ analytics, health, providerStats, routing });
       showError('');
-      showAuthBanner(authRequired);
+      showAnalyticsBanner(false);
       $('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString();
     } catch (err) {
       if (err.name === 'AbortError') return;
       state.inFlight = null;
-      showAuthBanner(false);
+      showAnalyticsBanner(false);
       showError('Fetch failed — ' + err.message);
     }
   }
@@ -499,20 +479,12 @@ export const DASHBOARD_HTML = `<!doctype html>
     }
   }
 
-  function render({ analytics, health, providerStats, routing, authRequired }) {
+  function render({ analytics, health, providerStats, routing }) {
     const healthItems = health.items || health.models || [];
     const activeModels = healthItems.filter((h) => (h.attempts || 0) > 0).length;
     const total = analytics?.total_requests || 0;
-    const hasPublicData = healthItems.length > 0 || routing?.fallback_order?.length > 0;
 
-    if (authRequired && !hasPublicData) {
-      $('emptyState').style.display = 'block';
-      $('mainView').style.display = 'none';
-      setAnalyticsLocked(true);
-      return;
-    }
-
-    if (!authRequired && analytics && total === 0 && activeModels === 0) {
+    if (analytics && total === 0 && activeModels === 0) {
       $('emptyState').style.display = 'block';
       $('mainView').style.display = 'none';
       return;
@@ -521,19 +493,17 @@ export const DASHBOARD_HTML = `<!doctype html>
     $('emptyState').style.display = 'none';
     $('mainView').style.display = '';
 
-    if (authRequired || !analytics) {
+    if (!analytics) {
       renderRoutingKpis(routing);
-      setAnalyticsLocked(true);
       renderTimeline([]);
-      renderProviders({});
-      renderTopModels({});
+      renderBreakdown({});
+      renderTopBreakdown({});
       renderProjects({});
     } else {
       renderAnalyticsKpis(analytics, healthItems, activeModels);
-      setAnalyticsLocked(false);
       renderTimeline(analytics.daily || []);
-      renderProviders(analytics.providers || {});
-      renderTopModels(analytics.models || {});
+      renderBreakdown(getActiveBreakdown(analytics));
+      renderTopBreakdown(getActiveBreakdown(analytics));
       renderProjects(analytics.projects || {});
     }
 
@@ -688,12 +658,29 @@ export const DASHBOARD_HTML = `<!doctype html>
     }
   }
 
-  function renderProviders(providers) {
-    const entries = Object.entries(providers).sort((a, b) => (b[1].requests || 0) - (a[1].requests || 0));
+  function getActiveBreakdown(analytics) {
+    return analytics?.[state.groupBy] || {};
+  }
+
+  function activeBreakdownLabel() {
+    if (state.groupBy === 'projects') return 'Project ID';
+    if (state.groupBy === 'models') return 'Model';
+    return 'Provider';
+  }
+
+  function activeBreakdownTitle() {
+    if (state.groupBy === 'projects') return 'Project-id breakdown';
+    if (state.groupBy === 'models') return 'Model breakdown';
+    return 'Provider breakdown';
+  }
+
+  function renderBreakdown(items) {
+    const entries = Object.entries(items).sort((a, b) => (b[1].requests || 0) - (a[1].requests || 0));
     const labels = entries.map((e) => e[0]);
     const values = entries.map((e) => e[1].requests || 0);
     const data = { labels, datasets: [{ label: 'Requests', data: values, backgroundColor: chartColors.accent, borderRadius: 4 }] };
     const opts = { ...baseOpts, indexAxis: 'y', plugins: { legend: { display: false } } };
+    $('breakdownTitle').textContent = activeBreakdownTitle();
     if (state.charts.providers) {
       state.charts.providers.data = data;
       state.charts.providers.options = opts;
@@ -747,10 +734,13 @@ export const DASHBOARD_HTML = `<!doctype html>
     }
   }
 
-  function renderTopModels(models) {
+  function renderTopBreakdown(items) {
     const tb = $('topModelsBody');
     tb.innerHTML = '';
-    const entries = Object.entries(models)
+    const label = activeBreakdownLabel();
+    $('topBreakdownTitle').textContent = 'Top 10 ' + label.toLowerCase() + 's';
+    $('topBreakdownLabel').textContent = label;
+    const entries = Object.entries(items)
       .map(([k, v]) => ({ key: k, ...v }))
       .sort((a, b) => (b.requests || 0) - (a.requests || 0))
       .slice(0, 10);

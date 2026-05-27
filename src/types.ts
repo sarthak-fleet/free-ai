@@ -195,6 +195,7 @@ export interface Env {
   CLOUDFLARE_WORKERS_AI_API_KEY?: string;
   WORKERS_AI_ENABLED?: string;
   GATEWAY_API_KEY?: string;
+  GATEWAY_API_KEY_HASHES?: string;
   OPENROUTER_API_KEY?: string;
   CEREBRAS_API_KEY?: string;
   SAMBANOVA_API_KEY?: string;

@@ -38,15 +38,15 @@ describe('Dashboard HTML routes', () => {
     expect(res.headers.get('location')).toBe('/dashboard');
   });
 
-  it('includes unauthenticated dashboard guidance and public endpoint fetches', async () => {
+  it('includes public analytics dashboard controls and endpoint fetches', async () => {
     const res = await fetchRoute('/dashboard');
     const html = await res.text();
 
-    expect(html).toContain('Usage analytics require credentials');
-    expect(html).toContain('GATEWAY_API_KEY');
+    expect(html).toContain('Group: Project ID');
+    expect(html).toContain('Usage analytics are public');
+    expect(html).toContain('/v1/analytics?days=');
     expect(html).toContain('/v1/routing/status');
-    expect(html).toContain('authRequired');
     expect(html).toContain('Routing fallback order');
-    expect(html).toContain('Analytics locked');
+    expect(html).not.toContain('Analytics locked');
   });
 });

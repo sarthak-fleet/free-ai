@@ -49,6 +49,45 @@ describe('/v1 authentication', () => {
       error: { code: 'invalid_api_key' },
     });
   });
+
+  it('accepts additional hashed gateway API keys', async () => {
+    const { env } = makeTestEnv({
+      GATEWAY_API_KEY: 'legacy-key',
+      GATEWAY_API_KEY_HASHES: 'test-secondary:7964817d0f3d4ec2eb13f3671edd285fbef0a9d3e5d8f2bf426f4540e5954c1e',
+    });
+    const res = await app.fetch(chatRequest({ authorization: 'Bearer secondary-key' }, { project_id: '' }), env, makeCtx());
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.not.toMatchObject({
+      error: { code: 'invalid_api_key' },
+    });
+  });
+
+  it('accepts hash-only auth when the legacy key is absent', async () => {
+    const { env } = makeTestEnv({
+      GATEWAY_API_KEY: '',
+      GATEWAY_API_KEY_HASHES: '7964817d0f3d4ec2eb13f3671edd285fbef0a9d3e5d8f2bf426f4540e5954c1e',
+    });
+    const res = await app.fetch(chatRequest({ authorization: 'Bearer secondary-key' }, { project_id: '' }), env, makeCtx());
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.not.toMatchObject({
+      error: { code: 'auth_not_configured' },
+    });
+  });
+
+  it('rejects requests when the hash ring does not contain the provided key', async () => {
+    const { env } = makeTestEnv({
+      GATEWAY_API_KEY: '',
+      GATEWAY_API_KEY_HASHES: '7964817d0f3d4ec2eb13f3671edd285fbef0a9d3e5d8f2bf426f4540e5954c1e',
+    });
+    const res = await app.fetch(chatRequest({ authorization: 'Bearer wrong-key' }), env, makeCtx());
+
+    expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: 'invalid_api_key' },
+    });
+  });
 });
 
 function analyticsRequest(headers: HeadersInit = {}) {
@@ -59,34 +98,9 @@ function analyticsRequest(headers: HeadersInit = {}) {
 }
 
 describe('/v1/analytics authentication', () => {
-  it('rejects requests without a Bearer token', async () => {
+  it('allows requests without a Bearer token', async () => {
     const { env } = makeTestEnv({ GATEWAY_API_KEY: 'secret-key' });
     const res = await app.fetch(analyticsRequest(), env, makeCtx());
-
-    expect(res.status).toBe(401);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: 'invalid_api_key' },
-    });
-  });
-
-  it('rejects requests with an incorrect token', async () => {
-    const { env } = makeTestEnv({ GATEWAY_API_KEY: 'secret-key' });
-    const res = await app.fetch(
-      analyticsRequest({ authorization: 'Bearer wrong-key' }),
-      env,
-      makeCtx(),
-    );
-
-    expect(res.status).toBe(401);
-  });
-
-  it('allows requests with the correct Bearer token', async () => {
-    const { env } = makeTestEnv({ GATEWAY_API_KEY: 'secret-key' });
-    const res = await app.fetch(
-      analyticsRequest({ authorization: 'Bearer secret-key' }),
-      env,
-      makeCtx(),
-    );
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toMatchObject({
@@ -94,13 +108,24 @@ describe('/v1/analytics authentication', () => {
     });
   });
 
-  it('fails closed (503) when GATEWAY_API_KEY is not configured', async () => {
+  it('ignores incorrect tokens on the public analytics endpoint', async () => {
+    const { env } = makeTestEnv({ GATEWAY_API_KEY: 'secret-key' });
+    const res = await app.fetch(
+      analyticsRequest({ authorization: 'Bearer wrong-key' }),
+      env,
+      makeCtx(),
+    );
+
+    expect(res.status).toBe(200);
+  });
+
+  it('stays public when GATEWAY_API_KEY is not configured', async () => {
     const { env } = makeTestEnv({ GATEWAY_API_KEY: '' });
     const res = await app.fetch(analyticsRequest(), env, makeCtx());
 
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(200);
     await expect(res.json()).resolves.toMatchObject({
-      error: { code: 'auth_not_configured' },
+      total_requests: expect.any(Number),
     });
   });
 });

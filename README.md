@@ -42,6 +42,8 @@ You can provide the project ID in one of two ways:
 
 Public health and model listing endpoints do not require a token. Data-generating `/v1/*` endpoints fail closed with `401` when `GATEWAY_API_KEY` is missing or invalid.
 
+Operators can keep the legacy `GATEWAY_API_KEY` secret and add more accepted keys through `GATEWAY_API_KEY_HASHES`, a comma- or newline-separated list of SHA-256 hex digests. Entries may be labeled as `label:sha256hex` for rotation notes.
+
 ## Chat Models
 
 Use `model: "auto"` to let the gateway pick the best available model, or specify an exact model ID.
@@ -346,17 +348,12 @@ Returns model health snapshots.
 
 ```
 GET /v1/analytics?project_id=<id>&days=<n>
-Authorization: Bearer <GATEWAY_API_KEY>
 ```
 
 Returns aggregate request volume and success rates broken down by provider,
-model, project, and day. This exposes operational load/health data, so it
-**requires the `GATEWAY_API_KEY` Bearer token** — the same key used for
-chat/embedding requests. Requests without a valid token get `401`; if the key
-is not configured on the deploy, the endpoint fails closed with `503`.
-
-The owner dashboard at `/dashboard` has a "Bearer token" field that supplies
-this token.
+model, project, and day. This read-only endpoint is public so the owner
+dashboard at `/dashboard` can show all stats without a token. Token-spending
+chat, embedding, image, video, and audio routes still require `GATEWAY_API_KEY`.
 
 ## Response Extensions
 

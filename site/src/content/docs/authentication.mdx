@@ -13,7 +13,16 @@ Authorization: Bearer <GATEWAY_API_KEY>
 
 ## Obtaining an API Key
 
-Production keys are currently provisioned by the operator and stored as the `GATEWAY_API_KEY` Worker secret. The documented self-serve `POST /access/request-key` flow is not live yet; do not build clients that depend on it until that endpoint ships.
+Production keys are currently provisioned by the operator. The legacy primary key is stored as the `GATEWAY_API_KEY` Worker secret. Additional keys can be added without exposing plaintext values by storing SHA-256 hashes in the `GATEWAY_API_KEY_HASHES` Worker secret.
+
+`GATEWAY_API_KEY_HASHES` accepts comma-separated or newline-separated entries. Each entry can be either a raw SHA-256 hex digest or `label:sha256hex`:
+
+```
+testing:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+customer-a:...
+```
+
+The documented self-serve `POST /access/request-key` flow is not live yet; do not build clients that depend on it until that endpoint ships.
 
 Store this key securely. Treat it like a password: do not commit it to source control, expose it in browser code, or log it from Workers.
 
@@ -48,7 +57,10 @@ The following endpoints do **not** require authentication:
 | Endpoint | Method | Description |
 |---|---|---|
 | `/health` | `GET` | Provider health status |
+| `/v1/analytics` | `GET` | Aggregate usage analytics |
+| `/v1/stats/providers` | `GET` | Provider throttle statistics |
+| `/v1/models` | `GET` | Available model list |
 | `/docs` | `GET` | This documentation site |
 | `/openapi.json` | `GET` | OpenAPI specification |
 
-All `/v1/*` endpoints and `/usage` require a valid Bearer token.
+Token-spending generation endpoints and `/usage` require a valid Bearer token.

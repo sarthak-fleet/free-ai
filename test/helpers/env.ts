@@ -30,6 +30,7 @@ export interface FakeEnvOverrides {
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_WORKERS_AI_API_KEY?: string;
   WORKERS_AI_ENABLED?: string;
+  GATEWAY_API_KEY_HASHES?: string;
   kv?: Map<string, string>;
   providerStats?: unknown[];
   healthSnapshots?: unknown[];
@@ -112,6 +113,7 @@ export function makeTestEnv(overrides: FakeEnvOverrides = {}) {
     RATE_LIMIT_DO,
     HEALTH_KV,
     GATEWAY_API_KEY: overrides.GATEWAY_API_KEY ?? 'test-gateway-key',
+    GATEWAY_API_KEY_HASHES: overrides.GATEWAY_API_KEY_HASHES,
     TOGETHER_API_KEY: overrides.TOGETHER_API_KEY,
     GEMINI_API_KEY: overrides.GEMINI_API_KEY,
     GROQ_API_KEY: overrides.GROQ_API_KEY,
