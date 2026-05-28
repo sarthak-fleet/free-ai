@@ -49,6 +49,8 @@ describe('Dashboard HTML routes', () => {
     expect(html).toContain('Usage analytics are public');
     expect(html).toContain('/v1/analytics?days=');
     expect(html).toContain('/v1/routing/status');
+    expect(html).toContain('Provider quota status');
+    expect(html).toContain('quota exhausted');
     expect(html).toContain('Routing fallback order');
     expect(html).not.toContain('Analytics locked');
   });

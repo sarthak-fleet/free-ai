@@ -156,6 +156,7 @@ export const DASHBOARD_HTML = `<!doctype html>
   .pcard.available { border-color: rgba(34,197,94,0.25); }
   .pcard.degraded { border-color: rgba(245,158,11,0.25); }
   .pcard.cooldown, .pcard.exhausted { border-color: rgba(239,68,68,0.25); }
+  .pcard.quota-exhausted { border-color: rgba(239,68,68,0.5); }
   .pcard .pname { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; display: flex;
     align-items: center; justify-content: space-between; }
   .pcard .pcounts { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -163,6 +164,14 @@ export const DASHBOARD_HTML = `<!doctype html>
   .pcard .pcap-label { font-size: 11px; color: var(--muted); font-family: var(--mono); }
   .pcard .pbest { font-size: 11px; color: var(--muted); font-family: var(--mono);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quota-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .quota-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .quota-item.exhausted { border-color: rgba(239,68,68,0.45); }
+  .quota-item.unknown { border-color: rgba(138,138,148,0.25); }
+  .quota-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .quota-name { font-weight:600; font-size:13px; }
+  .quota-meta { font-size:11px; color:var(--muted); font-family:var(--mono); }
   @media (max-width: 960px) { .pcards { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -204,6 +213,11 @@ export const DASHBOARD_HTML = `<!doctype html>
     </div>
 
     <div id="providerCards" class="pcards" style="display:none"></div>
+
+    <div class="card" id="quotaCard" style="display:none">
+      <h2>Provider quota status</h2>
+      <div class="quota-grid" id="quotaGrid"></div>
+    </div>
 
     <div class="grid grid-2" id="analyticsCharts">
       <div class="card" id="timelineCard">
@@ -508,6 +522,7 @@ export const DASHBOARD_HTML = `<!doctype html>
     }
 
     renderProviderCards(routing);
+    renderProviderQuotas(providerStats && providerStats.quotas ? providerStats.quotas : {});
     renderThrottles(providerStats && providerStats.stats ? providerStats.stats : []);
     renderHealth(healthItems);
     renderRouting(routing);
@@ -566,6 +581,7 @@ export const DASHBOARD_HTML = `<!doctype html>
     const container = $('providerCards');
     const providers = routing?.providers || {};
     const fallbackOrder = routing?.fallback_order || [];
+    const quotas = {};
     const entries = Object.entries(providers);
     if (entries.length === 0) { container.style.display = 'none'; return; }
     container.style.display = '';
@@ -579,6 +595,9 @@ export const DASHBOARD_HTML = `<!doctype html>
         p.limit += item.daily_limit;
       }
       capacity[item.provider] = p;
+      if (item.quota_status) {
+        quotas[item.provider] = item.quota_status;
+      }
     }
 
     // Sort: available first, then degraded, then cooldown/exhausted
@@ -592,6 +611,7 @@ export const DASHBOARD_HTML = `<!doctype html>
     container.innerHTML = '';
     for (const [name, p] of entries) {
       const status = p.available_models > 0 ? 'available' : p.degraded_models > 0 ? 'degraded' : p.cooldown_models > 0 ? 'cooldown' : 'exhausted';
+      const quotaStatus = quotas[name];
       const statusCls = { available: 'ok', degraded: 'warn', cooldown: 'err', exhausted: 'err' };
       const cap = capacity[name] || { used: 0, limit: 0 };
       const usageRatio = cap.limit > 0 ? Math.min(1, cap.used / cap.limit) : 0;
@@ -601,14 +621,66 @@ export const DASHBOARD_HTML = `<!doctype html>
       if (p.degraded_models > 0) countBadges.push('<span class="badge warn">' + p.degraded_models + ' deg</span>');
       if (p.cooldown_models > 0) countBadges.push('<span class="badge err">' + p.cooldown_models + ' cool</span>');
       if (p.exhausted_models > 0) countBadges.push('<span class="badge err">' + p.exhausted_models + ' exh</span>');
+      if (quotaStatus === 'exhausted') countBadges.push('<span class="badge err">quota exhausted</span>');
+      if (quotaStatus === 'unknown') countBadges.push('<span class="badge mute">quota unknown</span>');
       const div = document.createElement('div');
-      div.className = 'pcard ' + status;
+      div.className = 'pcard ' + status + (quotaStatus === 'exhausted' ? ' quota-exhausted' : '');
       div.innerHTML =
         '<div class="pname">' + escape(name) + '<span class="badge ' + statusCls[status] + '">' + status + '</span></div>' +
         '<div class="pcounts">' + countBadges.join('') + '</div>' +
         (cap.limit > 0 ? '<div class="pcap"><div class="progress ' + capBarCls + '"><div style="width:' + (usageRatio * 100).toFixed(1) + '%"></div></div><div class="pcap-label">' + fmt(cap.used) + ' / ' + fmt(cap.limit) + ' daily</div></div>' : '') +
         (p.best_model ? '<div class="pbest">' + escape(p.best_model) + '</div>' : '');
       container.appendChild(div);
+    }
+  }
+
+  function quotaBadgeClass(status) {
+    if (status === 'ok') return 'ok';
+    if (status === 'exhausted') return 'err';
+    return 'mute';
+  }
+
+  function quotaLabel(q) {
+    if (!q) return 'unknown';
+    if (q.limitRemaining != null && q.limit != null) {
+      return fmt(q.limitRemaining) + ' remaining / ' + fmt(q.limit);
+    }
+    if (q.isFreeTier && q.freeDailyLimit) {
+      return 'free tier · ~' + fmt(q.freeDailyLimit) + '/day';
+    }
+    return q.source || 'unknown';
+  }
+
+  function renderProviderQuotas(quotas) {
+    const card = $('quotaCard');
+    const grid = $('quotaGrid');
+    const entries = Object.entries(quotas || {});
+    if (entries.length === 0) {
+      card.style.display = 'none';
+      grid.innerHTML = '';
+      return;
+    }
+
+    card.style.display = '';
+    grid.innerHTML = '';
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [name, q] of entries) {
+      const item = document.createElement('div');
+      item.className = 'quota-item ' + escape(q.status || 'unknown');
+      const usedRatio = q.limit != null && q.limit > 0
+        ? Math.max(0, Math.min(1, 1 - ((q.limitRemaining || 0) / q.limit)))
+        : 0;
+      item.innerHTML =
+        '<div class="quota-head"><span class="quota-name mono">' + escape(name) + '</span>'
+        + '<span class="badge ' + quotaBadgeClass(q.status) + '">' + escape(q.status || 'unknown') + '</span></div>'
+        + '<div class="pcap">'
+        + (q.limit != null && q.limit > 0
+          ? '<div class="progress ' + (q.status === 'exhausted' ? 'danger' : '') + '"><div style="width:' + (usedRatio * 100).toFixed(1) + '%"></div></div>'
+          : '')
+        + '<div class="pcap-label">' + escape(quotaLabel(q)) + '</div></div>'
+        + '<div class="quota-meta">' + escape(q.reason || q.source || 'advisory') + '</div>'
+        + '<div class="quota-meta">checked ' + escape(q.checkedAt ? new Date(q.checkedAt).toLocaleTimeString() : '—') + '</div>';
+      grid.appendChild(item);
     }
   }
 
