@@ -75,6 +75,7 @@ export const OPERATOR_HEALTH_HTML = `<!doctype html>
     <div class="spacer"></div>
     <a class="button" href="/models">Model catalog</a>
     <a class="button" href="/dashboard">Traffic dashboard</a>
+    <a class="button" href="/benchmark">Benchmark optimizer</a>
     <button class="button" id="refresh">Refresh</button>
   </div>
   <div class="banner" id="error"></div>

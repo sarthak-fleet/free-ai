@@ -20,6 +20,11 @@ import {
   hasVideoProviderKey,
   isWorkersAiEnabled,
 } from './config';
+import { BENCHMARK_COST_OPTIMIZER_HTML } from './benchmark-cost-optimizer-html';
+import {
+  createBenchmarkExperimentEntry,
+  getBenchmarkOptimizerFixture,
+} from './benchmark/cost-optimizer';
 import { DASHBOARD_HTML } from './dashboard-html';
 import { MODEL_CATALOG_HTML, OPERATOR_HEALTH_HTML } from './operator-ui-html';
 import {
@@ -467,6 +472,80 @@ const routingLedgerResponseSchema = z.object({
   ),
 });
 
+const benchmarkOptimizerSchema = z.object({
+  ok: z.literal(true),
+  source: z.string(),
+  fixture_id: z.string(),
+  generated_at: z.string(),
+  privacy: z.object({
+    stores_prompt_text: z.literal(false),
+    uses_synthetic_benchmarks: z.boolean(),
+  }),
+  cost_basis: z.object({
+    unit: z.string(),
+    note: z.string(),
+  }),
+  workloads: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      prompt_class: z.string(),
+      description: z.string(),
+    }),
+  ),
+  candidates: z.array(
+    z.object({
+      id: z.string(),
+      provider: z.string(),
+      model: z.string(),
+      quality_tier: z.enum(['low', 'medium', 'high']),
+      cost_usd_per_1m_tokens: z.number(),
+      latency_ms_p50: z.number(),
+      latency_ms_p90: z.number(),
+      success_rate: z.number(),
+      cooldown_until: z.number(),
+      status: z.enum(['available', 'degraded', 'cooldown', 'exhausted']),
+      headroom: z.number(),
+      score: z.number(),
+    }),
+  ),
+  routes_by_workload: z.array(
+    z.object({
+      workload_id: z.string(),
+      recommended: z.object({
+        provider: z.string(),
+        model: z.string(),
+        id: z.string(),
+        reason: z.string(),
+      }),
+      alternates: z.array(z.object({ id: z.string(), reason: z.string() })),
+    }),
+  ),
+  experiments: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      recorded_at: z.string(),
+      change: z.string(),
+      notes: z.string(),
+      baseline_id: z.string().optional(),
+      metrics: z.object({
+        avg_success_rate: z.number(),
+        avg_latency_ms: z.number(),
+        estimated_cost_usd_per_1k_req: z.number(),
+        fallback_rate: z.number(),
+      }),
+    }),
+  ),
+});
+
+const benchmarkExperimentCreateSchema = z.object({
+  label: z.string().min(1),
+  change: z.string().optional(),
+  notes: z.string().optional(),
+  baseline_id: z.string().optional(),
+});
+
 const replayRequestSchema = chatRequestSchema
   .extend({
     provider: z.enum(TEXT_PROVIDER_VALUES).optional(),
@@ -553,6 +632,9 @@ const RATE_LIMIT_EXEMPT_GET = new Set([
   '/v1/provider-quotas',
   '/v1/models',
   '/v1/dashboard',
+  '/v1/benchmark/optimizer',
+  '/benchmark',
+  '/v1/benchmark',
 ]);
 
 // PostHog tracing middleware
@@ -594,6 +676,9 @@ const AUTH_EXEMPT_GET = new Set([
   '/v1/models',
   '/v1/dashboard',
   '/v1/budget',
+  '/v1/benchmark/optimizer',
+  '/benchmark',
+  '/v1/benchmark',
 ]);
 
 app.use('/v1/*', async (c, next) => {
@@ -3016,6 +3101,61 @@ app.get('/dashboard', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_H
 app.get('/dashboard/', (c) => c.redirect('/dashboard'));
 app.get('/live', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
 app.get('/v1/dashboard', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
+
+app.get('/benchmark', (c) => {
+  setDashboardHeaders(c);
+  return c.html(BENCHMARK_COST_OPTIMIZER_HTML);
+});
+app.get('/benchmark/', (c) => c.redirect('/benchmark'));
+app.get('/v1/benchmark', (c) => {
+  setDashboardHeaders(c);
+  return c.html(BENCHMARK_COST_OPTIMIZER_HTML);
+});
+
+const benchmarkOptimizerRoute = createRoute({
+  method: 'get',
+  path: '/v1/benchmark/optimizer',
+  responses: {
+    200: {
+      description: 'Fixture-backed benchmark matrix and workload route recommendations',
+      content: { 'application/json': { schema: benchmarkOptimizerSchema } },
+    },
+  },
+});
+
+app.openapi(benchmarkOptimizerRoute, (c) => {
+  return c.json(getBenchmarkOptimizerFixture());
+});
+
+const benchmarkExperimentRoute = createRoute({
+  method: 'post',
+  path: '/v1/benchmark/experiments',
+  request: {
+    body: {
+      content: { 'application/json': { schema: benchmarkExperimentCreateSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Prototype experiment ledger entry (client merges; no server persistence)',
+      content: {
+        'application/json': {
+          schema: z.object({
+            ok: z.literal(true),
+            stored: z.literal('session_fixture_only'),
+            entry: benchmarkOptimizerSchema.shape.experiments.element,
+            message: z.string(),
+          }),
+        },
+      },
+    },
+  },
+});
+
+app.openapi(benchmarkExperimentRoute, async (c) => {
+  const body = c.req.valid('json');
+  return c.json(createBenchmarkExperimentEntry(body));
+});
 
 function routingModelStatus(snapshot: ModelStateSnapshot | undefined, now: number): 'available' | 'degraded' | 'cooldown' | 'exhausted' {
   if (snapshot && snapshot.cooldownUntil > now) {

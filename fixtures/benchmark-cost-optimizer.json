@@ -1,0 +1,192 @@
+{
+  "ok": true,
+  "source": "fixture",
+  "fixture_id": "benchmark-cost-optimizer-v1",
+  "generated_at": "2026-06-04T12:00:00.000Z",
+  "privacy": {
+    "stores_prompt_text": false,
+    "uses_synthetic_benchmarks": true
+  },
+  "cost_basis": {
+    "unit": "usd_per_1m_output_tokens",
+    "note": "Relative cost vs GPT-4o mini ($0.60/1M out). Free-tier providers are $0 direct API cost; Workers AI uses neuron estimate."
+  },
+  "workloads": [
+    {
+      "id": "text-chat",
+      "label": "Text chat",
+      "prompt_class": "text",
+      "description": "Short assistant turns, no tools or vision"
+    },
+    {
+      "id": "tools-agent",
+      "label": "Tool-calling agent",
+      "prompt_class": "text+tools",
+      "description": "Function-calling loops with structured outputs"
+    },
+    {
+      "id": "vision-describe",
+      "label": "Vision describe",
+      "prompt_class": "text+vision",
+      "description": "Image + text multimodal prompts"
+    },
+    {
+      "id": "json-extract",
+      "label": "JSON extraction",
+      "prompt_class": "json+text",
+      "description": "response_format json_object workloads"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "groq/llama-3.3-70b-versatile",
+      "provider": "groq",
+      "model": "llama-3.3-70b-versatile",
+      "quality_tier": "high",
+      "cost_usd_per_1m_tokens": 0,
+      "latency_ms_p50": 420,
+      "latency_ms_p90": 780,
+      "success_rate": 0.94,
+      "cooldown_until": 0,
+      "status": "available",
+      "headroom": 0.82,
+      "score": 0.91
+    },
+    {
+      "id": "gemini/gemini-2.0-flash",
+      "provider": "gemini",
+      "model": "gemini-2.0-flash",
+      "quality_tier": "medium",
+      "cost_usd_per_1m_tokens": 0,
+      "latency_ms_p50": 680,
+      "latency_ms_p90": 1200,
+      "success_rate": 0.97,
+      "cooldown_until": 0,
+      "status": "available",
+      "headroom": 0.91,
+      "score": 0.89
+    },
+    {
+      "id": "workers_ai/@cf/meta/llama-3.1-8b-instruct",
+      "provider": "workers_ai",
+      "model": "@cf/meta/llama-3.1-8b-instruct",
+      "quality_tier": "low",
+      "cost_usd_per_1m_tokens": 0.02,
+      "latency_ms_p50": 1100,
+      "latency_ms_p90": 2100,
+      "success_rate": 0.88,
+      "cooldown_until": 0,
+      "status": "available",
+      "headroom": 0.65,
+      "score": 0.76
+    },
+    {
+      "id": "cerebras/llama3.1-8b",
+      "provider": "cerebras",
+      "model": "llama3.1-8b",
+      "quality_tier": "low",
+      "cost_usd_per_1m_tokens": 0,
+      "latency_ms_p50": 310,
+      "latency_ms_p90": 520,
+      "success_rate": 0.72,
+      "cooldown_until": 1749004800000,
+      "status": "cooldown",
+      "headroom": 0.4,
+      "score": 0.58
+    },
+    {
+      "id": "openrouter/meta-llama/llama-3.2-3b-instruct:free",
+      "provider": "openrouter",
+      "model": "meta-llama/llama-3.2-3b-instruct:free",
+      "quality_tier": "low",
+      "cost_usd_per_1m_tokens": 0,
+      "latency_ms_p50": 890,
+      "latency_ms_p90": 1600,
+      "success_rate": 0.81,
+      "cooldown_until": 0,
+      "status": "degraded",
+      "headroom": 0,
+      "score": 0.42
+    }
+  ],
+  "routes_by_workload": [
+    {
+      "workload_id": "text-chat",
+      "recommended": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "id": "groq/llama-3.3-70b-versatile",
+        "reason": "Highest score at $0 direct cost with sub-500ms p50"
+      },
+      "alternates": [
+        { "id": "gemini/gemini-2.0-flash", "reason": "Higher success rate, slightly slower" },
+        { "id": "workers_ai/@cf/meta/llama-3.1-8b-instruct", "reason": "Neuron budget fallback when external quotas tighten" }
+      ]
+    },
+    {
+      "workload_id": "tools-agent",
+      "recommended": {
+        "provider": "gemini",
+        "model": "gemini-2.0-flash",
+        "id": "gemini/gemini-2.0-flash",
+        "reason": "Stable tool calling and JSON mode on free tier"
+      },
+      "alternates": [
+        { "id": "groq/llama-3.3-70b-versatile", "reason": "Faster when tool schema stays simple" }
+      ]
+    },
+    {
+      "workload_id": "vision-describe",
+      "recommended": {
+        "provider": "gemini",
+        "model": "gemini-2.0-flash",
+        "id": "gemini/gemini-2.0-flash",
+        "reason": "Vision-capable with best success rate in fixture"
+      },
+      "alternates": [
+        { "id": "workers_ai/@cf/meta/llama-3.1-8b-instruct", "reason": "Not vision-capable — excluded by capability filter" }
+      ]
+    },
+    {
+      "workload_id": "json-extract",
+      "recommended": {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "id": "groq/llama-3.3-70b-versatile",
+        "reason": "json_mode capable with lowest latency among capable models"
+      },
+      "alternates": [
+        { "id": "gemini/gemini-2.0-flash", "reason": "Slightly higher reliability for long JSON payloads" }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "id": "exp-baseline-2026-06-01",
+      "label": "Baseline scoring weights",
+      "recorded_at": "2026-06-01T09:00:00.000Z",
+      "change": "success_rate×0.6 + headroom×0.2 + latency×0.15",
+      "notes": "Pre-change control from synthetic replay of routing ledger patterns",
+      "metrics": {
+        "avg_success_rate": 0.89,
+        "avg_latency_ms": 740,
+        "estimated_cost_usd_per_1k_req": 0,
+        "fallback_rate": 0.11
+      }
+    },
+    {
+      "id": "exp-latency-bias-2026-06-04",
+      "label": "Latency bias trial",
+      "recorded_at": "2026-06-04T12:00:00.000Z",
+      "change": "latency weight 0.15 → 0.22 (prototype only)",
+      "notes": "Fixture snapshot for before/after comparison in operator UI",
+      "baseline_id": "exp-baseline-2026-06-01",
+      "metrics": {
+        "avg_success_rate": 0.87,
+        "avg_latency_ms": 610,
+        "estimated_cost_usd_per_1k_req": 0,
+        "fallback_rate": 0.14
+      }
+    }
+  ]
+}

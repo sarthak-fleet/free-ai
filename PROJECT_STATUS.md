@@ -12,6 +12,7 @@ Last updated: 2026-06-04
 - Browser-first operator health and searchable model catalog surfaces on top of the existing `/health` and `/v1/models` JSON endpoints.
 - Operator key-ring helper at `scripts/gateway-key-ring.mjs` for hash-only key provisioning.
 - Anonymous routing experiment ledger (`routing_ledger_rollup` D1 table) with public `GET /v1/routing/ledger` and operator health UI rollup (no prompt text stored).
+- Prototype benchmark & cost optimizer operator UI at `/benchmark` with fixture-backed `GET /v1/benchmark/optimizer` and client-merge experiment entries via `POST /v1/benchmark/experiments`.
 
 ## Current Observations
 

@@ -2,12 +2,14 @@
   "extends": "@saas-maker/tsconfig/vite.json",
   "compilerOptions": {
     "types": ["@cloudflare/workers-types", "vitest/globals"],
+    "resolveJsonModule": true,
     "noPropertyAccessFromIndexSignature": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
   "include": [
     "src/**/*.ts",
+    "fixtures/**/*.json",
     "test/**/*.ts",
     "playground/src/**/*.ts",
     "playground/src/**/*.tsx",

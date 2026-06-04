@@ -34,6 +34,7 @@ describe('Operator browser UI routes', () => {
     expect(html).toContain("readJson('/health')");
     expect(html).toContain('/v1/routing/status');
     expect(html).toContain('/v1/routing/ledger?days=7');
+    expect(html).toContain('href="/benchmark"');
   });
 
   it('keeps /v1/models JSON as the default API response', async () => {
