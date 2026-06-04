@@ -16,5 +16,5 @@ Both examples:
 
 - default to `https://free-ai-gateway.sarthakagrawal927.workers.dev`
 - use `baseURL=<gateway>/v1`
-- can auto-request a key from `/access/request-key` when no key is provided
+- require an operator-provisioned `GATEWAY_API_KEY`
 - print simple text response outputs from `responses`, `chat.completions`, and streaming chat

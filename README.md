@@ -44,6 +44,8 @@ Public health and model listing endpoints do not require a token. Data-generatin
 
 Operators can keep the legacy `GATEWAY_API_KEY` secret and add more accepted keys through `GATEWAY_API_KEY_HASHES`, a comma- or newline-separated list of SHA-256 hex digests. Entries may be labeled as `label:sha256hex` for rotation notes.
 
+Use the operator key-ring workflow in [docs/gateway-key-ops.md](docs/gateway-key-ops.md) for new keys. The helper stores only labels and SHA-256 hashes locally; it never writes plaintext keys to the repo.
+
 ## Chat Models
 
 Use `model: "auto"` to let the gateway pick the best available model, or specify an exact model ID.
@@ -323,7 +325,8 @@ curl $GATEWAY_URL/v1/embeddings \
 GET /v1/models
 ```
 
-Lists all available models with health status and routing metadata.
+Lists all available models with health status and routing metadata. Browser
+requests render the searchable model catalog; API clients still receive JSON.
 
 ### Routing Status
 
@@ -342,7 +345,8 @@ next?" without spending provider quota.
 GET /health
 ```
 
-Returns model health snapshots.
+Returns model health snapshots. Browser requests render the operator health
+dashboard; API clients still receive JSON.
 
 ### Analytics
 
@@ -457,6 +461,16 @@ pnpm install
 cp .env.example .env  # fill provider keys
 pnpm dev:local
 ```
+
+## Operator Key Management
+
+```bash
+pnpm keys:generate -- --label testing-20260603
+pnpm keys:print-secret
+pnpm keys:upload
+```
+
+`pnpm keys:upload` replaces the complete `GATEWAY_API_KEY_HASHES` secret. Seed `ops/gateway-key-hashes.local.json` with every existing hash before uploading.
 
 ## Deploy
 

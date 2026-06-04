@@ -13,8 +13,7 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-If `GATEWAY_API_KEY` is empty, the script requests one from `/access/request-key`.
-If that endpoint is rate-limited, set `GATEWAY_API_KEY` in `.env` and run again.
+Set `GATEWAY_API_KEY` in `.env` before running. Keys are operator-provisioned.
 
 ## Output
 

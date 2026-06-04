@@ -24,6 +24,8 @@ customer-a:...
 
 The documented self-serve `POST /access/request-key` flow is not live yet; do not build clients that depend on it until that endpoint ships.
 
+Operators should use `scripts/gateway-key-ring.mjs` to generate or import hash entries and upload the complete hash ring. Cloudflare Worker secrets are write-only, so the local operator manifest must contain every hash that should remain valid before uploading `GATEWAY_API_KEY_HASHES`.
+
 Store this key securely. Treat it like a password: do not commit it to source control, expose it in browser code, or log it from Workers.
 
 ## Using the Key

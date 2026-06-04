@@ -42,52 +42,6 @@ function previewToken(token) {
   return `${token.slice(0, 12)}...`;
 }
 
-async function requestGatewayKey(baseUrl) {
-  const payload = {
-    name: 'Node SDK Example',
-    email: `node-example+${Date.now()}@example.com`,
-    company: 'Free AI',
-    use_case: 'Node OpenAI SDK example bootstrap',
-    intended_use: 'internal',
-    expected_daily_requests: 100,
-  };
-
-  const response = await fetch(`${baseUrl}/access/request-key`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const text = await response.text();
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error(`Key request returned non-JSON (${response.status}): ${text}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      `Key request failed (${response.status}): ${JSON.stringify(parsed)}. ` +
-        'Set GATEWAY_API_KEY in .env to skip key request.',
-    );
-  }
-
-  if (!parsed.api_key) {
-    throw new Error(
-      `Key request did not return api_key: ${JSON.stringify(parsed)}. ` +
-        'Set GATEWAY_API_KEY in .env to skip key request.',
-    );
-  }
-
-  return {
-    apiKey: parsed.api_key,
-    requestId: parsed.request_id ?? null,
-  };
-}
-
 async function main() {
   loadDotEnv(resolve(process.cwd(), '.env'));
 
@@ -98,13 +52,9 @@ async function main() {
   const streamPrompt = process.env.STREAM_PROMPT || 'Reply with exactly: NODE_STREAM_OK';
   const forceProvider = process.env.FORCE_PROVIDER || '';
 
-  let apiKey = process.env.GATEWAY_API_KEY || '';
-  let requestId = null;
-
+  const apiKey = process.env.GATEWAY_API_KEY || '';
   if (!apiKey) {
-    const issued = await requestGatewayKey(gatewayBaseUrl);
-    apiKey = issued.apiKey;
-    requestId = issued.requestId;
+    throw new Error('Set GATEWAY_API_KEY in .env or the environment before running this example.');
   }
 
   const client = new OpenAI({
@@ -151,7 +101,6 @@ async function main() {
         ok: true,
         gateway_base_url: gatewayBaseUrl,
         token_preview: previewToken(apiKey),
-        request_id: requestId,
         responses_text: responseResult.output_text,
         chat_text: chatResult.choices?.[0]?.message?.content || '',
         stream_text: streamText,

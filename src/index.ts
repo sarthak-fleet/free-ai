@@ -4,6 +4,7 @@ import { capture, configurePostHog, flushPostHog,trace } from '@saas-maker/ops';
 import pLimit from 'p-limit';
 import pRetry, { AbortError } from 'p-retry';
 
+import { isGatewayAuthConfigured, isValidGatewayApiKey } from './auth/gateway';
 import {
   getImageRegistry,
   getModelKey,
@@ -20,6 +21,7 @@ import {
   isWorkersAiEnabled,
 } from './config';
 import { DASHBOARD_HTML } from './dashboard-html';
+import { MODEL_CATALOG_HTML, OPERATOR_HEALTH_HTML } from './operator-ui-html';
 import {
   imageProviderCallers,
   providerCallers,
@@ -777,62 +779,6 @@ function buildChatRoundRobinKey(params: {
 }): string {
   const providerSet = params.candidates.map((candidate) => getModelKey(candidate.provider, candidate.model)).join(',');
   return `chat:${params.endpoint}:${params.min_reasoning_level ?? 'auto'}:${params.stream ? 'stream' : 'nonstream'}:${providerSet}`;
-}
-
-function isGatewayAuthConfigured(env: Env): boolean {
-  return Boolean(env.GATEWAY_API_KEY || parseGatewayApiKeyHashes(env.GATEWAY_API_KEY_HASHES).length > 0);
-}
-
-async function isValidGatewayApiKey(providedKey: string, env: Env): Promise<boolean> {
-  if (!providedKey) {
-    return false;
-  }
-
-  const legacyKey = env.GATEWAY_API_KEY;
-  if (legacyKey && providedKey.length === legacyKey.length && isConstantTimeEqual(providedKey, legacyKey)) {
-    return true;
-  }
-
-  const expectedHashes = parseGatewayApiKeyHashes(env.GATEWAY_API_KEY_HASHES);
-  if (expectedHashes.length === 0) {
-    return false;
-  }
-
-  const providedHash = await sha256Hex(providedKey);
-  return expectedHashes.some((expectedHash) => isConstantTimeEqual(providedHash, expectedHash));
-}
-
-function parseGatewayApiKeyHashes(raw: string | undefined): string[] {
-  if (!raw) {
-    return [];
-  }
-
-  return raw
-    .split(/[,\n]+/)
-    .map((entry) => entry.trim())
-    .map((entry) => {
-      const separatorIndex = entry.lastIndexOf(':');
-      return separatorIndex === -1 ? entry : entry.slice(separatorIndex + 1).trim();
-    })
-    .filter((hash) => /^[a-f0-9]{64}$/i.test(hash))
-    .map((hash) => hash.toLowerCase());
-}
-
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-/** Constant-time string comparison — prevents timing oracle on API key checks. */
-function isConstantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  const aBytes = new TextEncoder().encode(a);
-  const bBytes = new TextEncoder().encode(b);
-  let diff = 0;
-  for (let i = 0; i < aBytes.length; i++) {
-    diff |= aBytes[i] ^ bBytes[i];
-  }
-  return diff === 0;
 }
 
 function isSafetyRefusal(completion: Record<string, unknown> | undefined): boolean {
@@ -2834,9 +2780,28 @@ const modelsRoute = createRoute({
   },
 });
 
-app.openapi(modelsRoute, async (c) => {
-  const registry = getModelRegistry(c.env);
-  const limits = getProviderLimits(c.env);
+type ModelListResponse = { data: z.infer<typeof modelItemSchema>[] };
+type HealthResponse = z.infer<typeof healthSchema>;
+
+const setDashboardHeaders = (c: { header: (k: string, v: string) => void }) => {
+  c.header('cache-control', 'no-store, no-cache, must-revalidate, max-age=0');
+  c.header('cdn-cache-control', 'no-store');
+  c.header('cloudflare-cdn-cache-control', 'no-store');
+};
+
+function wantsBrowserHtml(c: { req: { header: (key: string) => string | undefined } }): boolean {
+  const accept = c.req.header('accept') ?? '';
+  if (!accept.toLowerCase().includes('text/html')) {
+    return false;
+  }
+
+  const fetchDest = c.req.header('sec-fetch-dest');
+  return fetchDest === undefined || fetchDest === 'document';
+}
+
+async function buildModelListResponse(env: Env): Promise<ModelListResponse> {
+  const registry = getModelRegistry(env);
+  const limits = getProviderLimits(env);
   const keys = registry.map((candidate) => getModelKey(candidate.provider, candidate.model));
 
   const lookupLimits: Record<string, ProviderLimitConfig> = {};
@@ -2845,8 +2810,8 @@ app.openapi(modelsRoute, async (c) => {
     lookupLimits[key] = limits[key] ?? { requestsPerDay: 200 };
   }
 
-  const stateMap = await healthLookup(c.env, keys, lookupLimits, Date.now());
-  const evaluationMap = parseEvaluationWeights(c.env.MODEL_EVALUATIONS_JSON);
+  const stateMap = await healthLookup(env, keys, lookupLimits, Date.now());
+  const evaluationMap = parseEvaluationWeights(env.MODEL_EVALUATIONS_JSON);
 
   const parallel = pLimit(8);
   const data = await Promise.all(
@@ -2879,15 +2844,32 @@ app.openapi(modelsRoute, async (c) => {
     ),
   );
 
-  return c.json({ data });
+  return { data };
+}
+
+app.use('/v1/models', async (c, next) => {
+  if (c.req.method === 'GET' && wantsBrowserHtml(c)) {
+    setDashboardHeaders(c);
+    return c.html(MODEL_CATALOG_HTML);
+  }
+
+  await next();
 });
 
+app.openapi(modelsRoute, async (c) => {
+  return c.json(await buildModelListResponse(c.env));
+});
 
-const setDashboardHeaders = (c: { header: (k: string, v: string) => void }) => {
-  c.header('cache-control', 'no-store, no-cache, must-revalidate, max-age=0');
-  c.header('cdn-cache-control', 'no-store');
-  c.header('cloudflare-cdn-cache-control', 'no-store');
-};
+app.get('/models', async (c) => {
+  if (wantsBrowserHtml(c)) {
+    setDashboardHeaders(c);
+    return c.html(MODEL_CATALOG_HTML);
+  }
+
+  return c.json(await buildModelListResponse(c.env));
+});
+app.get('/models/', (c) => c.redirect('/models'));
+
 app.get('/dashboard', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
 app.get('/dashboard/', (c) => c.redirect('/dashboard'));
 app.get('/live', (c) => { setDashboardHeaders(c); return c.html(DASHBOARD_HTML); });
@@ -2962,7 +2944,8 @@ app.openapi(routingStatusRoute, async (c) => {
   const stateMap = await healthLookup(c.env, keys, lookupLimits, now);
   const evaluationMap = parseEvaluationWeights(c.env.MODEL_EVALUATIONS_JSON);
   const quotaStatuses = await getRoutingQuotaStatuses(c.env, registry);
-  const selected = selectCandidates(registry, stateMap, {
+  const routableRegistry = registry.filter((candidate) => providerQuotaAllowsCandidate(candidate, quotaStatuses));
+  const selected = selectCandidates(routableRegistry, stateMap, {
     stream: false,
     now,
     evaluationMap,
@@ -3131,9 +3114,9 @@ const healthRoute = createRoute({
   },
 });
 
-app.openapi(healthRoute, async (c) => {
-  const snapshots = await healthSnapshot(c.env);
-  return c.json({
+async function buildHealthResponse(env: Env): Promise<HealthResponse> {
+  const snapshots = await healthSnapshot(env);
+  return {
     ok: true,
     models: snapshots.map((snapshot) => ({
       key: snapshot.key,
@@ -3147,7 +3130,29 @@ app.openapi(healthRoute, async (c) => {
       daily_used: snapshot.dailyUsed,
       daily_limit: snapshot.dailyLimit,
     })),
-  });
+  };
+}
+
+app.use('/health', async (c, next) => {
+  if (c.req.method === 'GET' && wantsBrowserHtml(c)) {
+    setDashboardHeaders(c);
+    return c.html(OPERATOR_HEALTH_HTML);
+  }
+
+  await next();
+});
+
+app.openapi(healthRoute, async (c) => {
+  return c.json(await buildHealthResponse(c.env));
+});
+
+app.get('/health/', (c) => {
+  if (wantsBrowserHtml(c)) {
+    setDashboardHeaders(c);
+    return c.html(OPERATOR_HEALTH_HTML);
+  }
+
+  return c.redirect('/health');
 });
 
 const analyticsRoute = createRoute({

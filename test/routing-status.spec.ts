@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getModelKey, getModelRegistry } from '../src/config';
 import app from '../src/index';
 import { makeCtx, makeTestEnv } from './helpers/env';
 
 describe('GET /v1/routing/status', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('returns operator-readable fallback readiness without authentication', async () => {
     const { env } = makeTestEnv({
       GEMINI_API_KEY: 'gemini-test-key',
@@ -63,5 +67,44 @@ describe('GET /v1/routing/status', () => {
     expect(body.fallback_order.find((item) => item.id === cooldownCandidate.id)?.reasons).toContain('in_cooldown');
     expect(body.providers[healthyCandidate.provider]?.configured_models).toBeGreaterThan(0);
     expect(body.providers[healthyCandidate.provider]?.best_model).toBeTruthy();
+  });
+
+  it('ranks quota-exhausted providers after routable models', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          data: {
+            limit: 1,
+            limit_remaining: 0,
+            usage: 1,
+            usage_daily: 0,
+            is_free_tier: true,
+          },
+        }),
+      ),
+    );
+
+    const { env } = makeTestEnv({
+      OPENROUTER_API_KEY: 'openrouter-test-key',
+      GROQ_API_KEY: 'groq-test-key',
+    });
+
+    const res = await app.fetch(new Request('https://gateway.test/v1/routing/status'), env, makeCtx());
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      fallback_order: Array<{ provider: string; status: string; reasons: string[] }>;
+      summary: { top_provider: string | null };
+    };
+
+    expect(body.summary.top_provider).not.toBe('openrouter');
+    expect(body.fallback_order[0]?.provider).not.toBe('openrouter');
+    expect(body.fallback_order.some((item) => item.provider === 'openrouter' && item.status === 'exhausted')).toBe(true);
+    expect(
+      body.fallback_order
+        .filter((item) => item.provider === 'openrouter')
+        .every((item) => item.reasons.includes('provider_quota_exhausted')),
+    ).toBe(true);
   });
 });
