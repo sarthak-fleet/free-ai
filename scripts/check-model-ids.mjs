@@ -180,10 +180,6 @@ async function main() {
       // Walk back to opening `{`
       let start = idIdx;
       while (start > 0 && source[start] !== '{') start--;
-      // Walk back past whitespace to preceding `,` or `[`
-      let before = start - 1;
-      while (before >= 0 && /\s/.test(source[before])) before--;
-      if (source[before] === ',') start = before; // include leading comma
       // Walk forward matching braces
       let depth = 0;
       let end = start;
@@ -194,10 +190,17 @@ async function main() {
           if (depth === 0) { end = i + 1; break; }
         }
       }
-      // Include trailing `,` and newline
-      if (source[end] === ',') end++;
-      while (end < source.length && /[ \t]/.test(source[end])) end++;
-      if (source[end] === '\n') end++;
+      // Prefer removing the block's own trailing comma. If the block is the
+      // final element and has no trailing comma, remove the preceding comma.
+      if (source[end] === ',') {
+        end++;
+        while (end < source.length && /[ \t]/.test(source[end])) end++;
+        if (source[end] === '\n') end++;
+      } else {
+        let before = start - 1;
+        while (before >= 0 && /\s/.test(source[before])) before--;
+        if (source[before] === ',') start = before;
+      }
       return source.slice(0, start) + source.slice(end);
     };
 
@@ -228,10 +231,14 @@ async function main() {
   },`;
       }).join('\n');
 
-      const marker = /(const DEFAULT_MODELS: ModelCandidate\[\] = \[[\s\S]*?)(\n\];)/;
-      const match = marker.exec(src);
-      if (match) {
-        src = src.replace(marker, `$1\n\n  // ── Auto-added by weekly model check (review priority + capabilities) ──\n${stubs}$2`);
+      const modelsStart = src.indexOf('const DEFAULT_MODELS: ModelCandidate[] = [');
+      const limitsStart = src.indexOf('const DEFAULT_LIMITS:', modelsStart);
+      const modelsEnd = modelsStart === -1 || limitsStart === -1 ? -1 : src.lastIndexOf('\n];', limitsStart);
+      if (modelsStart !== -1 && modelsEnd !== -1) {
+        src =
+          src.slice(0, modelsEnd) +
+          `\n\n  // ── Auto-added by weekly model check (review priority + capabilities) ──\n${stubs}` +
+          src.slice(modelsEnd);
       }
 
       // Add limits section entries
