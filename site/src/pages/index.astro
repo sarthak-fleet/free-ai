@@ -254,7 +254,7 @@ const rb = '}';
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/><path d="M21 14v3a2 2 0 01-2 2h-3"/><path d="M3 10V7a2 2 0 012-2h3"/></svg>
           </div>
           <h3>Multi-Provider Routing</h3>
-          <p>Automatic round-robin across Workers AI, Groq, Gemini, OpenRouter, and Cerebras with health-aware fallback.</p>
+          <p>Routes across all 8 providers — Groq, Gemini, SambaNova, NVIDIA, Cerebras, OpenRouter, Voyage, and Workers AI — with health-aware fallback.</p>
         </div>
         <div class="feature afu d4">
           <div class="feature-icon green">
@@ -305,7 +305,7 @@ const rb = '}';
         </p>
         <p style="font-size:.78rem;color:var(--text-muted);margin-top:-.5rem">
           Heads up: this aggregates free provider tiers — best-effort, no SLA.
-          Per-IP limit is ~10 burst / ~20 rpm, each model has a daily cap, and the gateway returns <code>503</code> only when every capable model is rate-limited (usually clears within minutes).
+          Per-IP limit is ~10 burst / ~20 rpm, each model has a daily cap, and the gateway returns <code>503</code> only when every capable model is rate-limited — rate-limit windows reset within minutes.
           For production throughput, pin a model and bring your own keys.
         </p>
         <a class="btn btn-primary" href="/getting-started" style="margin-top: 0.5rem;">
