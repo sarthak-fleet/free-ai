@@ -428,6 +428,8 @@ The gateway uses health-aware routing with capability filtering:
 - Force a specific provider with `X-Gateway-Force-Provider: groq` header
 - Force a specific model with `X-Gateway-Force-Model: llama-3.3-70b-versatile` header
 
+Command Code is part of the provider catalog when `COMMAND_CODE_API_KEY` is configured. Its catalog mirrors the Provider API model list, with `command-code-mimo-v2-5` / `xiaomi/mimo-v2.5` prioritized; force it with `X-Gateway-Force-Provider: command_code`.
+
 ### What happens when a free provider fails?
 
 A single failing provider does not fail your request. For each call the gateway:

@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { callCerebras } from './cerebras';
 import { callCohere } from './cohere';
+import { callCommandCode } from './command-code';
 import { callGemini, callGeminiEmbeddings } from './gemini';
 import { callGeminiImages, type GeminiImageInput, type GeminiImageOutput } from './gemini-images';
 import { callGeminiStt } from './gemini-stt';
@@ -43,6 +44,7 @@ export const providerCallers: Record<TextProvider, ProviderCaller> = {
   pollinations: callPollinations,
   cohere: callCohere,
   mistral: callMistral,
+  command_code: callCommandCode,
 };
 
 export const providerEmbeddingCallers: Record<EmbeddingProvider, ProviderEmbeddingCaller> = {
