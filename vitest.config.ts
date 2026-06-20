@@ -1,11 +1,8 @@
-import { defineVitestConfig } from '@saas-maker/test-config/vitest';
+import { defineConfig } from 'vitest/config';
 
-export default defineVitestConfig({
-  include: ['test/**/*.spec.ts'],
-  coverage: {
-    enabled: false,
-  },
+export default defineConfig({
   test: {
+    include: ['test/**/*.spec.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

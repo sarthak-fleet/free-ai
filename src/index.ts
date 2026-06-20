@@ -1,6 +1,6 @@
 import { swaggerUI } from '@hono/swagger-ui';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
-import { capture, configurePostHog, flushPostHog,trace } from '@saas-maker/ops';
+import { capture, configurePostHog, flushPostHog, trace } from './lib/telemetry';
 import pLimit from 'p-limit';
 import pRetry, { AbortError } from 'p-retry';
 

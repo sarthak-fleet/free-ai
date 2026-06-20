@@ -1,27 +1,19 @@
-import { devices } from '@playwright/test';
-import { definePlaywrightConfig } from '@saas-maker/test-config/playwright';
+import { devices, defineConfig } from '@playwright/test';
 
-export default definePlaywrightConfig({
+export default defineConfig({
   testDir: './e2e',
-  baseURL: 'http://127.0.0.1:4173',
-  viewportMatrix: false,
-  smoke: false,
-  extend: {
-    fullyParallel: false,
-    retries: process.env.CI ? 1 : 0,
-    reporter: [['list'], ['html', { open: 'never' }]],
-    projects: [
-      { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    ],
-    use: {
-      baseURL: 'http://127.0.0.1:4173',
-      trace: 'retain-on-failure',
-    },
-    webServer: {
-      command: 'vite --config playground/vite.config.ts --host 127.0.0.1 --port 4173',
-      url: 'http://127.0.0.1:4173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
+  fullyParallel: false,
+  retries: process.env.CI ? 1 : 0,
+  reporter: [['list'], ['html', { open: 'never' }]],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+    trace: 'retain-on-failure',
+  },
+  webServer: {
+    command: 'vite --config playground/vite.config.ts --host 127.0.0.1 --port 4173',
+    url: 'http://127.0.0.1:4173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 });
