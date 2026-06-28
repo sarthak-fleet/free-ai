@@ -1562,7 +1562,7 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:poolside/laguna-m.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   // AUTO-ADDED limits
   // AUTO-ADDED limits
- // AUTO-ADDED — tune
+  // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:zai-glm-4.7': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   // AUTO-ADDED limits
