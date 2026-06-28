@@ -17,9 +17,9 @@ Last updated: 2026-06-22
 
 ### External
 
-- **AI providers (free tiers):** Workers AI, Groq, Gemini, OpenRouter, Cerebras, SambaNova, NVIDIA NIM, Voyage, Command Code.
+- **AI providers (free tiers):** Workers AI, Groq, Gemini, OpenRouter, Cerebras, SambaNova, NVIDIA NIM, Voyage.
 - **Cloudflare:** Workers, D1 (`free-ai-gateway-db`), Durable Objects (HealthStateDO, IpRateLimitDO, NeuronBudgetDO), KV (`HEALTH_KV`), Workers AI binding.
-- **Provider API keys (names only):** `GROQ_API_KEY`, `GEMINI_API_KEY`, `VOYAGE_API_KEY`, `OPENROUTER_API_KEY`, `CEREBRAS_API_KEY`, `SAMBANOVA_API_KEY`, `NVIDIA_API_KEY`, `COMMAND_CODE_API_KEY`, `CLOUDFLARE_WORKERS_AI_API_KEY`.
+- **Provider API keys (names only):** `GROQ_API_KEY`, `GEMINI_API_KEY`, `VOYAGE_API_KEY`, `OPENROUTER_API_KEY`, `CEREBRAS_API_KEY`, `SAMBANOVA_API_KEY`, `NVIDIA_API_KEY`, `CLOUDFLARE_WORKERS_AI_API_KEY`.
 - **Gateway auth secrets:** `GATEWAY_API_KEY`, `GATEWAY_API_KEY_HASHES` (SHA-256 hash-only provisioning via `ops/gateway-key-hashes.local.json`).
 
 ### Internal (fleet)
@@ -116,7 +116,6 @@ Last updated: 2026-06-22
 - `reasoning_effort` tier filtering (auto/low/medium/high).
 - Provider retry/cooldown loop; exhausted providers visible but ranked after routable ones.
 - Capability filtering returns `503` when no capable model available (no silent downgrade).
-- Command Code provider when `COMMAND_CODE_API_KEY` configured; `command-code-mimo-v2-5` prioritized.
 
 ### Provider catalog (free tiers)
 

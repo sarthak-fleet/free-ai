@@ -94,7 +94,6 @@ const TEXT_PROVIDER_VALUES = [
   'pollinations',
   'cohere',
   'mistral',
-  'command_code',
 ] as const;
 
 const QUOTA_POLLING_PROVIDERS: readonly TextProvider[] = ['openrouter'];
@@ -1067,12 +1066,14 @@ async function recordAnalytics(params: {
   provider?: Provider;
   model?: string;
 }) {
-  if (!params.projectId || !params.provider || !params.model) return;
+  if (!params.projectId) return;
 
   try {
     const date = new Date().toISOString().slice(0, 10);
     const isOk = params.outcome === 'ok' ? 1 : 0;
     const isError = params.outcome === 'error' ? 1 : 0;
+    const provider = params.provider ?? '';
+    const model = params.model ?? '';
 
     await params.db
       .prepare(`
@@ -1083,7 +1084,7 @@ async function recordAnalytics(params: {
         successful_requests = successful_requests + excluded.successful_requests,
         failed_requests = failed_requests + excluded.failed_requests
     `)
-      .bind(params.projectId, date, params.provider, params.model, isOk, isError)
+      .bind(params.projectId, date, provider, model, isOk, isError)
       .run();
   } catch (_err) {
     // Ignore analytics errors
@@ -1422,6 +1423,8 @@ app.openapi(chatRoute, async (c) => {
   let streamResponse: Response | null = null;
   let lastErrorClass = 'provider_fatal';
   let lastErrorMessage = 'Unknown error';
+  let lastAttemptedProvider: TextProvider | undefined;
+  let lastAttemptedModel: string | undefined;
 
   await pRetry(
     async () => {
@@ -1431,6 +1434,8 @@ app.openapi(chatRoute, async (c) => {
       }
 
       attemptCounter += 1;
+      lastAttemptedProvider = candidate.provider;
+      lastAttemptedModel = candidate.model;
       const startedAt = Date.now();
 
       try {
@@ -1731,8 +1736,8 @@ app.openapi(chatRoute, async (c) => {
       db: c.env.GATEWAY_DB,
       projectId,
       outcome: 'error',
-      provider: chosenMeta?.provider,
-      model: chosenMeta?.model,
+      provider: chosenMeta?.provider ?? lastAttemptedProvider,
+      model: chosenMeta?.model ?? lastAttemptedModel,
     })
   );
   scheduleChatRoutingLedger(c.executionCtx, c.env.GATEWAY_DB, {
@@ -2247,6 +2252,8 @@ app.openapi(embeddingsRoute, async (c) => {
   let finalResponse: Record<string, unknown> | null = null;
   let lastErrorClass = 'provider_fatal';
   let lastErrorMessage = 'Unknown error';
+  let lastAttemptedProvider: EmbeddingProvider | undefined;
+  let lastAttemptedModel: string | undefined;
   const maxEmbeddingAttempts = Math.max(1, candidates.length);
 
   await pRetry(
@@ -2257,6 +2264,8 @@ app.openapi(embeddingsRoute, async (c) => {
       }
 
       attemptCounter += 1;
+      lastAttemptedProvider = candidate.provider;
+      lastAttemptedModel = candidate.model;
 
       try {
         const caller = providerEmbeddingCallers[candidate.provider];
@@ -2330,8 +2339,8 @@ app.openapi(embeddingsRoute, async (c) => {
       db: c.env.GATEWAY_DB,
       projectId,
       outcome: 'error',
-      provider: chosenMeta?.provider,
-      model: chosenMeta?.model,
+      provider: chosenMeta?.provider ?? lastAttemptedProvider,
+      model: chosenMeta?.model ?? lastAttemptedModel,
     })
   );
 

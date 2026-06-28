@@ -21,33 +21,6 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
 }
 
 describe('Workers AI free-tier guard', () => {
-  it('keeps Command Code catalog models gated behind COMMAND_CODE_API_KEY', () => {
-    const withoutKey = getModelRegistry(makeEnv());
-    const withKey = getModelRegistry(makeEnv({ COMMAND_CODE_API_KEY: 'test-command-code-key' }));
-
-    const commandCodeModels = withKey.filter((candidate) => candidate.provider === 'command_code');
-    const topCommandCodeModel = commandCodeModels.reduce((top, candidate) =>
-      candidate.priority > top.priority ? candidate : top
-    );
-
-    expect(withoutKey.some((candidate) => candidate.provider === 'command_code')).toBe(false);
-    expect(commandCodeModels.length).toBe(29);
-    expect(topCommandCodeModel).toMatchObject({
-      id: 'command-code-mimo-v2-5',
-      provider: 'command_code',
-      model: 'xiaomi/mimo-v2.5',
-    });
-    expect(withKey).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'command-code-mimo-v2-5',
-          provider: 'command_code',
-          model: 'xiaomi/mimo-v2.5',
-        }),
-      ])
-    );
-  });
-
   it('keeps Workers AI disabled unless explicitly opted in', () => {
     const ai = { run: vi.fn() };
     const disabledEnv = makeEnv({ AI: ai });

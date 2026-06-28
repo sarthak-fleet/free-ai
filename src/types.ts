@@ -9,8 +9,7 @@ export type TextProvider =
   | 'github_models'
   | 'pollinations'
   | 'cohere'
-  | 'mistral'
-  | 'command_code';
+  | 'mistral';
 
 export type EmbeddingProvider = 'workers_ai' | 'gemini' | 'voyage_ai';
 
@@ -224,7 +223,6 @@ export interface Env {
   GITHUB_TOKEN?: string;
   COHERE_API_KEY?: string;
   MISTRAL_API_KEY?: string;
-  COMMAND_CODE_API_KEY?: string;
   TOGETHER_API_KEY?: string;
   MODEL_REGISTRY_JSON?: string;
   MODEL_EVALUATIONS_JSON?: string;
