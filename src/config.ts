@@ -1450,8 +1450,14 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     reasoning: 'medium',
     supportsStreaming: true,
     enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
+    priority: 0.5, // AUTO-ADDED by check-model-ids — review caps + priority
+    capabilities: {
+      toolCalling: false,
+      jsonMode: true,
+      vision: false,
+      contextWindow: 32768,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'cerebras-gemma-4-31b',
@@ -1460,8 +1466,14 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     reasoning: 'medium',
     supportsStreaming: true,
     enabled: true,
-    priority: 0.50, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: { toolCalling: false, jsonMode: true, vision: false, contextWindow: 32768, maxOutputTokens: 4096 },
+    priority: 0.5, // AUTO-ADDED by check-model-ids — review caps + priority
+    capabilities: {
+      toolCalling: false,
+      jsonMode: true,
+      vision: false,
+      contextWindow: 32768,
+      maxOutputTokens: 4096,
+    },
   },
 ];
 
@@ -1560,21 +1572,13 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:cognitivecomputations/dolphin-mistral-24b-venice-edition:free': {
     requestsPerDay: 100,
   }, // AUTO-ADDED — tune
-  // AUTO-ADDED — tune
-  // AUTO-ADDED limits
- // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-xs.2:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-m.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  // AUTO-ADDED limits
-  // AUTO-ADDED limits
-  // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:zai-glm-4.7': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  // AUTO-ADDED limits
   'groq:qwen/qwen3.6-27b': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:cohere/north-mini-code:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  // AUTO-ADDED limits
   'openrouter:poolside/laguna-xs-2.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:gemma-4-31b': { requestsPerDay: 100 }, // AUTO-ADDED — tune
 };
