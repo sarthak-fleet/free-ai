@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
+  site: 'https://ai-gateway.sassmaker.com',
   integrations: [
     starlight({
       title: 'sass-maker / AI Gateway',

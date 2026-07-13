@@ -14,7 +14,7 @@ This folder contains minimal client projects that use your deployed gateway as a
 
 Both examples:
 
-- default to `https://free-ai-gateway.sarthakagrawal927.workers.dev`
+- default to `https://ai-gateway.sassmaker.com`
 - use `baseURL=<gateway>/v1`
 - require an operator-provisioned `GATEWAY_API_KEY`
 - print simple text response outputs from `responses`, `chat.completions`, and streaming chat

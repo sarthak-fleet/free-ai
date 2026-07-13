@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-const DEFAULT_BASE_URL =
-  process.env.FREE_AI_BASE_URL || 'https://free-ai-gateway.sarthakagrawal927.workers.dev';
+const DEFAULT_BASE_URL = process.env.FREE_AI_BASE_URL || 'https://ai-gateway.sassmaker.com';
 const DEFAULT_MODEL = process.env.FREE_AI_SMOKE_EMBEDDING_MODEL || 'gemini-embedding-001';
 
 function usage() {

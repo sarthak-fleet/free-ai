@@ -60,7 +60,7 @@ Last updated: 2026-06-28
 
 ## Products
 
-- **Gateway Worker:** https://free-ai-gateway.sarthakagrawal927.workers.dev — worker `free-ai-gateway`; D1 `free-ai-gateway-db` (`6e9e2880-7f07-487a-8b55-8b486be3fa32`).
+- **Gateway Worker:** https://ai-gateway.sassmaker.com — worker `free-ai-gateway`; D1 `free-ai-gateway-db` (`6e9e2880-7f07-487a-8b55-8b486be3fa32`).
 - **Docs/landing (bundled):** Astro/Starlight site in `site/dist`, served via Worker `ASSETS` binding (`run_worker_first=true`) — no separate deploy.
 - **Operator UI:** `/dashboard`, `/live`, `/v1/dashboard`, `/benchmark`, `/v1/benchmark`, `/models`.
 - **Examples:** `examples/node-openai-sdk/`, `examples/python-openai-sdk/`.

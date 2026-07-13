@@ -38,7 +38,7 @@ def preview_token(token: str) -> str:
 def main() -> int:
     load_dotenv(Path.cwd() / ".env")
 
-    base_url = os.environ.get("GATEWAY_BASE_URL", "https://free-ai-gateway.sarthakagrawal927.workers.dev").rstrip("/")
+    base_url = os.environ.get("GATEWAY_BASE_URL", "https://ai-gateway.sassmaker.com").rstrip("/")
     model = os.environ.get("MODEL", "auto")
     responses_input = os.environ.get("RESPONSES_INPUT", "Reply with exactly: PY_RESPONSES_OK")
     chat_prompt = os.environ.get("CHAT_PROMPT", "Reply with exactly: PY_CHAT_OK")

@@ -103,7 +103,7 @@ Daily free-tier limits are tight (typically 10–30 requests per model per day).
 <Tabs>
 <TabItem label="curl">
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/videos/generations \
+curl https://ai-gateway.sassmaker.com/v1/videos/generations \
   -H "Authorization: Bearer <GATEWAY_API_KEY>" \
   -H "x-gateway-project-id: my_project" \
   -H "Content-Type: application/json" \
@@ -117,7 +117,7 @@ curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/videos/generations
 </TabItem>
 <TabItem label="JavaScript">
 ```js
-const res = await fetch('https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/videos/generations', {
+const res = await fetch('https://ai-gateway.sassmaker.com/v1/videos/generations', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer <GATEWAY_API_KEY>',
@@ -141,7 +141,7 @@ console.log('Job ID:', job.id, 'Status:', job.status);
 ### Poll until complete
 
 ```js
-const BASE = 'https://free-ai-gateway.sarthakagrawal927.workers.dev';
+const BASE = 'https://ai-gateway.sassmaker.com';
 
 async function pollUntilDone(jobId, { interval = 5000, timeout = 300_000 } = {}) {
   const deadline = Date.now() + timeout;
@@ -164,7 +164,7 @@ console.log(videoUrl);
 ### Image-to-video (Wan)
 
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/videos/generations \
+curl https://ai-gateway.sassmaker.com/v1/videos/generations \
   -H "Authorization: Bearer <GATEWAY_API_KEY>" \
   -H "x-gateway-project-id: my_project" \
   -H "Content-Type: application/json" \

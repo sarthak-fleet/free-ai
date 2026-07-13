@@ -2,7 +2,7 @@
 const title = 'AI Gateway — One API key, 8 free LLM providers';
 const description =
   'OpenAI-compatible gateway that routes across Groq, Gemini, Cerebras, SambaNova, NVIDIA, OpenRouter, Voyage, and Workers AI — auto-failover, no credit card, $0 per request.';
-const gw = 'https://free-ai-gateway.sarthakagrawal927.workers.dev';
+const gw = 'https://ai-gateway.sassmaker.com';
 const lb = '{';
 const rb = '}';
 ---
@@ -17,6 +17,7 @@ const rb = '}';
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={gw} />
+    <link rel="canonical" href={gw} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
@@ -380,7 +381,7 @@ console.<span class="cmd">log</span>(emb.data[0].embedding.length + <span class=
       </script>
       <script>
         (function() {
-          fetch('https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/stats/providers')
+          fetch('https://ai-gateway.sassmaker.com/v1/stats/providers')
             .then(function(r) { return r.ok ? r.json() : null; })
             .then(function(data) {
               if (!data || !data.stats) return;

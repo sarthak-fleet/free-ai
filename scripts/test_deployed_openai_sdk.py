@@ -3,7 +3,7 @@
 
 Usage:
   python3 scripts/test_deployed_openai_sdk.py \
-    --gateway-base-url https://free-ai-gateway.sarthakagrawal927.workers.dev
+    --gateway-base-url https://ai-gateway.sassmaker.com
 
 Provide --api-key, GATEWAY_API_KEY, or OPENAI_API_KEY before running.
 """
@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Smoke-test deployed gateway with OpenAI SDK")
     parser.add_argument(
         "--gateway-base-url",
-        default="https://free-ai-gateway.sarthakagrawal927.workers.dev",
+        default="https://ai-gateway.sassmaker.com",
         help="Gateway root URL (without /v1)",
     )
     parser.add_argument(

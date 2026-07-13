@@ -40,7 +40,7 @@ Supported providers:
 Before your first request, verify the gateway is live and see which providers are healthy — no API key needed:
 
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+curl https://ai-gateway.sassmaker.com/v1/routing/status
 ```
 
 You'll get a JSON list of active providers with their current latency, headroom, and cooldown state. Providers with `"degraded": false` are ready to route to. If a provider is rate-limited, the gateway auto-skips it and tries the next one.

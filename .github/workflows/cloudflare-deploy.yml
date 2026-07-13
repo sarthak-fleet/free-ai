@@ -52,4 +52,4 @@ jobs:
         run: pnpm run deploy
 
       - name: Smoke Check
-        run: curl --fail --show-error --silent --retry 3 --retry-delay 5 https://free-ai-gateway.sarthakagrawal927.workers.dev/health
+        run: curl --fail --show-error --silent --retry 3 --retry-delay 5 https://ai-gateway.sassmaker.com/health

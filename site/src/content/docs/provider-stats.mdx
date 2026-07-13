@@ -79,7 +79,7 @@ The gateway's own `auto` mode already does health-aware selection, but if you're
 ### Client-side example
 
 ```js
-const BASE = 'https://free-ai-gateway.sarthakagrawal927.workers.dev';
+const BASE = 'https://ai-gateway.sassmaker.com';
 
 async function pickBestProvider() {
   const res = await fetch(`${BASE}/v1/stats/providers`);
@@ -112,12 +112,12 @@ const chat = await fetch(`${BASE}/v1/chat/completions`, {
 <Tabs>
 <TabItem label="curl">
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/stats/providers
+curl https://ai-gateway.sassmaker.com/v1/stats/providers
 ```
 </TabItem>
 <TabItem label="JavaScript">
 ```js
-const res = await fetch('https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/stats/providers');
+const res = await fetch('https://ai-gateway.sassmaker.com/v1/stats/providers');
 const { stats } = await res.json();
 
 for (const s of stats) {

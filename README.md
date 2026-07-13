@@ -206,7 +206,7 @@ Embeddings require an explicit model — `auto` is not supported.
 Before making your first request, verify the gateway is live and see which providers are healthy right now — no auth required:
 
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+curl https://ai-gateway.sassmaker.com/v1/routing/status
 ```
 
 A healthy response lists providers with their `latency`, `headroom`, and `cooldown` status. Any provider with `"degraded": false` is ready to route to. If all providers show `"degraded": true`, check back in a few minutes — the gateway auto-recovers as provider rate limits reset.
@@ -230,7 +230,7 @@ This gateway aggregates each provider's free tier — it is **best-effort, not a
 
 ## API Endpoints
 
-Base URL: `https://free-ai-gateway.sarthakagrawal927.workers.dev`
+Base URL: `https://ai-gateway.sassmaker.com`
 
 ### Chat Completions
 
@@ -257,7 +257,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.GATEWAY_API_KEY,
-  baseURL: 'https://free-ai-gateway.sarthakagrawal927.workers.dev/v1',
+  baseURL: 'https://ai-gateway.sassmaker.com/v1',
 });
 
 const response = await client.chat.completions.create({
@@ -276,7 +276,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["GATEWAY_API_KEY"],
-    base_url="https://free-ai-gateway.sarthakagrawal927.workers.dev/v1",
+    base_url="https://ai-gateway.sassmaker.com/v1",
 )
 
 response = client.chat.completions.create(
@@ -391,7 +391,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   apiKey: process.env.GATEWAY_API_KEY,
-  baseURL: 'https://free-ai-gateway.sarthakagrawal927.workers.dev/v1',
+  baseURL: 'https://ai-gateway.sassmaker.com/v1',
 });
 
 const response = await client.chat.completions.create({
@@ -449,7 +449,7 @@ You don't need to manage per-provider keys, retries, or backoff in your app — 
 **Where to check status:** the public, no-auth endpoint `GET /v1/routing/status` returns the live fallback order with each provider's `latency`, `headroom`, `cooldown`, and `degraded` flag. If everything looks degraded, providers usually recover within a few minutes as their rate-limit windows reset.
 
 ```bash
-curl https://free-ai-gateway.sarthakagrawal927.workers.dev/v1/routing/status
+curl https://ai-gateway.sassmaker.com/v1/routing/status
 ```
 
 ## Rate Limits
