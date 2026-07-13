@@ -1162,7 +1162,7 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     },
   },
 
-  // ── Auto-added by weekly model check (review priority + capabilities) ──
+  // ── Tencent Hy3: official OpenRouter catalog capabilities (2026-07-13) ──
   {
     id: 'openrouter-google-gemma-4-26b-a4b-it-free',
     provider: 'openrouter',
@@ -1342,22 +1342,6 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     },
   },
   {
-    id: 'openrouter-poolside-laguna-xs-2-free',
-    provider: 'openrouter',
-    model: 'poolside/laguna-xs.2:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.5, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: {
-      toolCalling: false,
-      jsonMode: true,
-      vision: false,
-      contextWindow: 32768,
-      maxOutputTokens: 4096,
-    },
-  },
-  {
     id: 'openrouter-poolside-laguna-m-1-free',
     provider: 'openrouter',
     model: 'poolside/laguna-m.1:free',
@@ -1475,6 +1459,24 @@ const DEFAULT_MODELS: ModelCandidate[] = [
       maxOutputTokens: 4096,
     },
   },
+
+  // ── Auto-added by weekly model check (review priority + capabilities) ──
+  {
+    id: 'openrouter-tencent-hy3-free',
+    provider: 'openrouter',
+    model: 'tencent/hy3:free',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.5,
+    capabilities: {
+      toolCalling: true,
+      jsonMode: true,
+      vision: false,
+      contextWindow: 262_144,
+      maxOutputTokens: 262_144,
+    },
+  },
 ];
 
 const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
@@ -1573,7 +1575,6 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
     requestsPerDay: 100,
   }, // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:poolside/laguna-xs.2:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-m.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-ultra-550b-a55b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:zai-glm-4.7': { requestsPerDay: 100 }, // AUTO-ADDED — tune
@@ -1581,6 +1582,8 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:cohere/north-mini-code:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:poolside/laguna-xs-2.1:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'cerebras:gemma-4-31b': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+  // AUTO-ADDED limits
+  'openrouter:tencent/hy3:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
 };
 
 export interface RateLimitConfig {
