@@ -1,0 +1,400 @@
+---
+const title = 'Gateway Status — Live Model & Provider Health';
+const description = 'Human-readable status page rendering the live /v1/models and /v1/stats/providers endpoints: model registry, health scores, provider request counts, and quota status.';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href="https://ai-gateway.sassmaker.com/status" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #050a0e;
+        --bg-raised: #0a1118;
+        --bg-card: #0d1820;
+        --surface: #121f2b;
+        --border: #1a2d3a;
+        --border-bright: #245068;
+        --text: #e4edf3;
+        --text-secondary: #7d9bae;
+        --text-muted: #4a6575;
+        --brand: #0ea5e9;
+        --emerald: #10b981;
+        --amber: #f59e0b;
+        --red: #ef4444;
+        --font-body: 'DM Sans', system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .nav {
+        position: sticky; top: 0; z-index: 100;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 2rem; height: 52px;
+        background: rgba(5,10,14,0.85); backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+      .nav a:hover { color: var(--text); }
+      .nav-brand { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+      .nav-brand span { color: var(--text-muted); font-weight: 400; }
+      .nav-links { display: flex; gap: 1.5rem; }
+      .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+      .header { margin-bottom: 2rem; }
+      .header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; }
+      .header p { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; max-width: 600px; }
+
+      .refresh-bar {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 0.75rem 1rem; border-radius: 8px;
+        background: var(--bg-card); border: 1px solid var(--border);
+        margin-bottom: 2rem; font-size: 0.8rem;
+      }
+      .refresh-bar .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--emerald); flex-shrink: 0;
+      }
+      .refresh-bar .dot.loading { background: var(--amber); animation: pulse 1s infinite; }
+      .refresh-bar .dot.error { background: var(--red); }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+      .refresh-bar time { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.75rem; }
+      .refresh-bar button {
+        margin-left: auto; padding: 0.35rem 0.75rem; border-radius: 6px;
+        background: var(--surface); border: 1px solid var(--border);
+        color: var(--text-secondary); font-size: 0.75rem; cursor: pointer;
+        font-family: var(--font-body);
+      }
+      .refresh-bar button:hover { color: var(--text); border-color: var(--border-bright); }
+
+      .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+      .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+      .stat-card .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+      .stat-card .value { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; margin-top: 0.25rem; }
+      .stat-card .value .accent { color: var(--brand); }
+      .stat-card .value .green { color: var(--emerald); }
+      .stat-card .value .amber { color: var(--amber); }
+
+      .section { margin-bottom: 2.5rem; }
+      .section h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+      .section .sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
+
+      table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+      thead th {
+        text-align: left; padding: 0.6rem 0.75rem; font-weight: 600;
+        color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase;
+        letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+        position: sticky; top: 52px; background: var(--bg);
+      }
+      tbody td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+      tbody tr:hover { background: rgba(14,165,233,0.04); }
+      .table-wrap {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 10px; overflow: hidden; overflow-x: auto;
+      }
+
+      .badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.68rem; font-weight: 500; }
+      .badge-on { background: rgba(16,185,129,0.12); color: var(--emerald); }
+      .badge-off { background: rgba(239,68,68,0.1); color: var(--red); }
+      .badge-cool { background: rgba(245,158,11,0.12); color: var(--amber); }
+      .badge-cap { background: rgba(14,165,233,0.1); color: var(--brand); font-size: 0.65rem; }
+
+      .provider-name { font-weight: 500; }
+      .model-id { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); }
+      .health-bar { display: inline-flex; align-items: center; gap: 0.4rem; }
+      .health-bar .bar { width: 48px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+      .health-bar .bar .fill { height: 100%; border-radius: 2px; }
+      .health-bar .pct { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); }
+
+      .loading-msg { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+      .error-msg { text-align: center; padding: 2rem; color: var(--red); font-size: 0.85rem; }
+
+      .footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; font-size: 0.75rem; color: var(--text-muted); }
+      .footer a { color: var(--text-secondary); }
+
+      @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .container { padding: 1rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <a href="/" class="nav-brand">sass-maker <span>/ ai gateway</span></a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/getting-started">Docs</a>
+        <a href="/status" style="color: var(--brand)">Status</a>
+        <a href="/dashboard">Dashboard</a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="header">
+        <h1>Gateway Status</h1>
+        <p>
+          Live model registry and provider health from
+          <code style="font-family:var(--font-mono);color:var(--brand);font-size:0.85rem">/v1/models</code>
+          and
+          <code style="font-family:var(--font-mono);color:var(--brand);font-size:0.85rem">/v1/stats/providers</code>.
+          Auto-refreshes every 30 seconds.
+        </p>
+      </div>
+
+      <div class="refresh-bar">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Loading…</span>
+        <time id="last-updated"></time>
+        <button id="refresh-btn">Refresh now</button>
+      </div>
+
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <div class="section">
+        <h2>Provider Stats</h2>
+        <p class="sub">Aggregate request counts and success rates per provider from the analytics database.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th style="text-align:right">Requests</th>
+                <th style="text-align:right">Successful</th>
+                <th style="text-align:right">Failed</th>
+                <th style="text-align:right">Success Rate</th>
+                <th>Quota</th>
+              </tr>
+            </thead>
+            <tbody id="providers-tbody">
+              <tr><td colspan="6" class="loading-msg">Loading provider stats…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Model Registry</h2>
+        <p class="sub">All chat and embedding models with live health scores, capabilities, and cooldown status.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Model ID</th>
+                <th>Provider</th>
+                <th>Type</th>
+                <th>Capabilities</th>
+                <th>Health</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="models-tbody">
+              <tr><td colspan="6" class="loading-msg">Loading models…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Data from <a href="/v1/models">/v1/models</a> and <a href="/v1/stats/providers">/v1/stats/providers</a> ·
+         <a href="/dashboard">Full dashboard</a> ·
+         <a href="/getting-started">API docs</a></p>
+    </div>
+
+    <script>
+      const REFRESH_MS = 30000;
+      let timer = null;
+
+      async function fetchJson(url) {
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`${url} returned ${res.status}`);
+        return res.json();
+      }
+
+      function fmt(n) {
+        return new Intl.NumberFormat('en-US').format(n);
+      }
+
+      function pct(n) {
+        return (n * 100).toFixed(1) + '%';
+      }
+
+      function healthColor(rate) {
+        if (rate >= 0.9) return '#10b981';
+        if (rate >= 0.5) return '#f59e0b';
+        return '#ef4444';
+      }
+
+      function statusBadge(model) {
+        if (!model.enabled) return '<span class="badge badge-off">disabled</span>';
+        if (model.cooldown_until && model.cooldown_until > Date.now()) {
+          const secs = Math.ceil((model.cooldown_until - Date.now()) / 1000);
+          return `<span class="badge badge-cool">cooldown ${secs}s</span>`;
+        }
+        if (model.headroom !== undefined && model.headroom <= 0) {
+          return '<span class="badge badge-cool">rate-limited</span>';
+        }
+        return '<span class="badge badge-on">live</span>';
+      }
+
+      function caps(model) {
+        const caps = [];
+        if (model.tool_calling) caps.push('tools');
+        if (model.vision) caps.push('vision');
+        if (model.json_mode) caps.push('json');
+        if (model.native_reasoning) caps.push('reasoning');
+        if (model.supports_streaming) caps.push('stream');
+        return caps.map(c => `<span class="badge badge-cap">${c}</span>`).join(' ');
+      }
+
+      function renderModels(data) {
+        const tbody = document.getElementById('models-tbody');
+        if (!data || !data.data || data.data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="loading-msg">No models returned.</td></tr>';
+          return;
+        }
+        const rows = data.data
+          .sort((a, b) => {
+            if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
+            return a.model.localeCompare(b.model);
+          })
+          .map(m => {
+            const sr = m.success_rate ?? 0;
+            const color = healthColor(sr);
+            return `<tr>
+              <td class="model-id">${m.id}</td>
+              <td class="provider-name">${m.provider}</td>
+              <td>${m.type}</td>
+              <td>${caps(m)}</td>
+              <td>
+                <span class="health-bar">
+                  <span class="bar"><span class="fill" style="width:${sr*100}%;background:${color}"></span></span>
+                  <span class="pct">${pct(sr)}</span>
+                </span>
+              </td>
+              <td>${statusBadge(m)}</td>
+            </tr>`;
+          })
+          .join('');
+        tbody.innerHTML = rows;
+      }
+
+      function renderProviders(data) {
+        const tbody = document.getElementById('providers-tbody');
+        if (!data || !data.stats || Object.keys(data.stats).length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="loading-msg">No provider stats yet — requests will appear here after the first API call.</td></tr>';
+          return;
+        }
+        const quotas = data.quotas || {};
+        const rows = Object.entries(data.stats)
+          .sort(([,a], [,b]) => (b.requests || 0) - (a.requests || 0))
+          .map(([provider, s]) => {
+            const total = s.requests || 0;
+            const success = s.successful || 0;
+            const failed = s.failed || 0;
+            const rate = total > 0 ? success / total : 0;
+            const q = quotas[provider];
+            let quotaCell = '<span style="color:var(--text-muted)">—</span>';
+            if (q) {
+              if (q.remaining !== undefined && q.limit !== undefined) {
+                quotaCell = `${fmt(q.remaining)}/${fmt(q.limit)}`;
+              } else if (q.status) {
+                quotaCell = q.status;
+              }
+            }
+            return `<tr>
+              <td class="provider-name">${provider}</td>
+              <td style="text-align:right;font-family:var(--font-mono)">${fmt(total)}</td>
+              <td style="text-align:right;font-family:var(--font-mono);color:var(--emerald)">${fmt(success)}</td>
+              <td style="text-align:right;font-family:var(--font-mono);color:var(--red)">${fmt(failed)}</td>
+              <td style="text-align:right;font-family:var(--font-mono);color:${healthColor(rate)}">${pct(rate)}</td>
+              <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-secondary)">${quotaCell}</td>
+            </tr>`;
+          })
+          .join('');
+        tbody.innerHTML = rows;
+      }
+
+      function renderSummary(modelsData, providersData) {
+        const grid = document.getElementById('stats-grid');
+        const modelCount = modelsData?.data?.length || 0;
+        const chatCount = modelsData?.data?.filter(m => m.type === 'chat').length || 0;
+        const embedCount = modelsData?.data?.filter(m => m.type === 'embedding').length || 0;
+        const liveCount = modelsData?.data?.filter(m => m.enabled && (!m.cooldown_until || m.cooldown_until <= Date.now())).length || 0;
+
+        const pStats = providersData?.stats || {};
+        const totalReqs = Object.values(pStats).reduce((s, p) => s + (p.requests || 0), 0);
+        const totalSuccess = Object.values(pStats).reduce((s, p) => s + (p.successful || 0), 0);
+        const overallRate = totalReqs > 0 ? (totalSuccess / totalReqs) : null;
+
+        grid.innerHTML = `
+          <div class="stat-card">
+            <div class="label">Total models</div>
+            <div class="value">${modelCount}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Live now</div>
+            <div class="value"><span class="green">${liveCount}</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Chat / Embed</div>
+            <div class="value">${chatCount} <span class="accent">/</span> ${embedCount}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Overall success</div>
+            <div class="value">${overallRate !== null ? `<span class="green">${pct(overallRate)}</span>` : '—'}</div>
+          </div>
+        `;
+      }
+
+      async function refresh() {
+        const dot = document.getElementById('status-dot');
+        const text = document.getElementById('status-text');
+        const time = document.getElementById('last-updated');
+
+        dot.className = 'dot loading';
+        text.textContent = 'Fetching…';
+
+        try {
+          const [models, providers] = await Promise.all([
+            fetchJson('/v1/models'),
+            fetchJson('/v1/stats/providers'),
+          ]);
+
+          renderModels(models);
+          renderProviders(providers);
+          renderSummary(models, providers);
+
+          dot.className = 'dot';
+          text.textContent = 'Live';
+          time.textContent = new Date().toLocaleTimeString();
+        } catch (err) {
+          dot.className = 'dot error';
+          text.textContent = 'Error: ' + (err.message || 'fetch failed');
+          console.error('Status fetch error:', err);
+        }
+      }
+
+      document.getElementById('refresh-btn').addEventListener('click', () => {
+        refresh();
+      });
+
+      refresh();
+      timer = setInterval(refresh, REFRESH_MS);
+    </script>
+  </body>
+</html>
