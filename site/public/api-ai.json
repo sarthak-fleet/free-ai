@@ -3,8 +3,9 @@
   "version": "1",
   "url": "https://ai-gateway.sassmaker.com",
   "llms": "https://ai-gateway.sassmaker.com/llms.txt",
-  "llmsFull": null,
+  "llmsFull": "https://ai-gateway.sassmaker.com/llms-full.txt",
   "sitemap": "https://ai-gateway.sassmaker.com/sitemap.xml",
+  "robots": "https://ai-gateway.sassmaker.com/robots.txt",
   "markdown": {
     "suffix": ".md",
     "negotiation": true

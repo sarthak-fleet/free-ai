@@ -1,87 +1,60 @@
 /**
- * Portable agent-edge handler (fleet GEO standard).
+ * Portable agent-edge handler — copy or generate into each product.
  * Spec: fleet-ops/docs/agent-indexing-standard.md
+ *
+ * Usage in worker.mjs (before openNext.fetch):
+ *   import { handleAgentEdge } from './agent-edge.mjs'
+ *   const agent = handleAgentEdge(request)
+ *   if (agent) return agent
  */
 
+/** @type {{ name: string, url: string, llmsTxt: string, llmsFullTxt?: string, indexMd: string, catalog: object }} */
 export const AGENT_SURFACE = {
-  name: 'AI Gateway',
-  url: 'https://ai-gateway.sassmaker.com',
-  llmsTxt:
-    '# AI Gateway\n' +
-    '\n' +
-    '> OpenAI-compatible LLM gateway fronting free-tier models across multiple providers.\n' +
-    '\n' +
-    '## Product\n' +
-    '\n' +
-    '- [Health](https://ai-gateway.sassmaker.com/health): Health probe\n' +
-    '- [Models](https://ai-gateway.sassmaker.com/v1/models): OpenAI-compatible models list\n' +
-    '\n' +
-    '## Machine surfaces\n' +
-    '\n' +
-    '- [Agent catalog](https://ai-gateway.sassmaker.com/api/ai): JSON inventory of public surfaces\n' +
-    '- [Homepage markdown](https://ai-gateway.sassmaker.com/index.md): Product brief without JS\n' +
-    '- [This index](https://ai-gateway.sassmaker.com/llms.txt)\n' +
-    '\n' +
-    '## Optional\n' +
-    '\n' +
-    '- [Foundry](https://sassmaker.com): Parent fleet showcase\n',
-  indexMd:
-    '# AI Gateway (free-ai)\n' +
-    '\n' +
-    'OpenAI-compatible gateway over free-tier models across providers.\n' +
-    '\n' +
-    '## API\n' +
-    '\n' +
-    '- Base: https://ai-gateway.sassmaker.com\n' +
-    '- `GET /health`\n' +
-    '- `GET /v1/models`\n' +
-    '- Chat completions require API key (`GATEWAY_API_KEY`)\n' +
-    '\n' +
-    '## Agent entrypoints\n' +
-    '\n' +
-    '- https://ai-gateway.sassmaker.com/llms.txt\n' +
-    '- https://ai-gateway.sassmaker.com/api/ai\n' +
-    '- https://ai-gateway.sassmaker.com/index.md\n',
-  catalog: {
-    name: 'AI Gateway',
-    version: '1',
-    url: 'https://ai-gateway.sassmaker.com',
-    llms: 'https://ai-gateway.sassmaker.com/llms.txt',
-    llmsFull: null,
-    sitemap: 'https://ai-gateway.sassmaker.com/sitemap.xml',
-    markdown: {
-      suffix: '.md',
-      negotiation: true,
+  "name": "AI Gateway",
+  "url": "https://ai-gateway.sassmaker.com",
+  "llmsFullTxt": "# AI Gateway — full agent brief\n\nOpenAI-compatible LLM gateway fronting free-tier models across multiple providers.\n\n## Index\n\n# AI Gateway (free-ai)\n\nOpenAI-compatible gateway over free-tier models across providers.\n\n## API\n\n- Base: https://ai-gateway.sassmaker.com\n- `GET /health`\n- `GET /v1/models`\n- Chat completions require API key (`GATEWAY_API_KEY`)\n\n## Agent entrypoints\n\n- https://ai-gateway.sassmaker.com/llms.txt\n- https://ai-gateway.sassmaker.com/api/ai\n- https://ai-gateway.sassmaker.com/index.md\n\n## Product links\n\n- Health: https://ai-gateway.sassmaker.com/health — Health probe\n- Models: https://ai-gateway.sassmaker.com/v1/models — OpenAI-compatible models list\n\n## Machine surfaces\n\n- https://ai-gateway.sassmaker.com/llms.txt\n- https://ai-gateway.sassmaker.com/llms-full.txt\n- https://ai-gateway.sassmaker.com/api/ai\n- https://ai-gateway.sassmaker.com/index.md\n- https://ai-gateway.sassmaker.com/sitemap.xml\n- https://ai-gateway.sassmaker.com/robots.txt\n\n## Contact / fleet\n\n- Fleet: https://sassmaker.com\n- Agent email for directory verification: sarthakagrawal@agentmail.to\n",
+  "llmsTxt": "# AI Gateway\n\n> OpenAI-compatible LLM gateway fronting free-tier models across multiple providers.\n\n## Product\n\n- [Health](https://ai-gateway.sassmaker.com/health): Health probe\n- [Models](https://ai-gateway.sassmaker.com/v1/models): OpenAI-compatible models list\n\n## Machine surfaces\n\n- [Agent catalog](https://ai-gateway.sassmaker.com/api/ai): JSON inventory of public surfaces\n- [Homepage markdown](https://ai-gateway.sassmaker.com/index.md): Product brief without JS\n- [This index](https://ai-gateway.sassmaker.com/llms.txt)\n\n## Optional\n\n- [Foundry](https://sassmaker.com): Parent fleet showcase\n",
+  "indexMd": "# AI Gateway (free-ai)\n\nOpenAI-compatible gateway over free-tier models across providers.\n\n## API\n\n- Base: https://ai-gateway.sassmaker.com\n- `GET /health`\n- `GET /v1/models`\n- Chat completions require API key (`GATEWAY_API_KEY`)\n\n## Agent entrypoints\n\n- https://ai-gateway.sassmaker.com/llms.txt\n- https://ai-gateway.sassmaker.com/api/ai\n- https://ai-gateway.sassmaker.com/index.md\n",
+  "catalog": {
+    "name": "AI Gateway",
+    "version": "1",
+    "url": "https://ai-gateway.sassmaker.com",
+    "llms": "https://ai-gateway.sassmaker.com/llms.txt",
+    "llmsFull": "https://ai-gateway.sassmaker.com/llms-full.txt",
+    "sitemap": "https://ai-gateway.sassmaker.com/sitemap.xml",
+    "robots": "https://ai-gateway.sassmaker.com/robots.txt",
+    "markdown": {
+      "suffix": ".md",
+      "negotiation": true
     },
-    surfaces: [
+    "surfaces": [
       {
-        id: 'home',
-        url: 'https://ai-gateway.sassmaker.com/',
-        md: 'https://ai-gateway.sassmaker.com/index.md',
-        kind: 'spa',
-        description: 'Product home',
+        "id": "home",
+        "url": "https://ai-gateway.sassmaker.com/",
+        "md": "https://ai-gateway.sassmaker.com/index.md",
+        "kind": "spa",
+        "description": "Product home"
       },
       {
-        id: 'health',
-        url: 'https://ai-gateway.sassmaker.com/health',
-        md: null,
-        kind: 'static',
-        description: 'Health probe',
+        "id": "health",
+        "url": "https://ai-gateway.sassmaker.com/health",
+        "md": null,
+        "kind": "static",
+        "description": "Health probe"
       },
       {
-        id: 'models',
-        url: 'https://ai-gateway.sassmaker.com/v1/models',
-        md: null,
-        kind: 'static',
-        description: 'OpenAI-compatible models list',
-      },
+        "id": "models",
+        "url": "https://ai-gateway.sassmaker.com/v1/models",
+        "md": null,
+        "kind": "static",
+        "description": "OpenAI-compatible models list"
+      }
     ],
-    auth: {
-      public: true,
-      notes: 'Auth-walled app routes are not agent-indexed unless listed here.',
-    },
-  },
-  llmsFull: null,
+    "auth": {
+      "public": true,
+      "notes": "Auth-walled app routes are not agent-indexed unless listed here."
+    }
+  }
 };
 
 /**
@@ -94,20 +67,21 @@ export function handleAgentEdge(request) {
   const path = url.pathname === '' ? '/' : url.pathname;
 
   if (path === '/llms.txt') {
-    if (AGENT_SURFACE.skipLlms) return null;
     return text(AGENT_SURFACE.llmsTxt, 'text/plain; charset=utf-8');
   }
-  if (path === '/llms-full.txt' && AGENT_SURFACE.llmsFull) {
-    return text(AGENT_SURFACE.llmsFull, 'text/plain; charset=utf-8');
+  if (path === '/llms-full.txt' && AGENT_SURFACE.llmsFullTxt) {
+    return text(AGENT_SURFACE.llmsFullTxt, 'text/plain; charset=utf-8');
   }
   if (path === '/index.md') {
     return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8');
   }
   if (path === '/api/ai') {
+    // Re-bind origin so preview/custom domains stay correct
     const catalog = {
       ...AGENT_SURFACE.catalog,
       url: url.origin,
       llms: `${url.origin}/llms.txt`,
+      llmsFull: `${url.origin}/llms-full.txt`,
       sitemap: AGENT_SURFACE.catalog.sitemap
         ? String(AGENT_SURFACE.catalog.sitemap).replace(AGENT_SURFACE.url, url.origin)
         : `${url.origin}/sitemap.xml`,
@@ -120,6 +94,7 @@ export function handleAgentEdge(request) {
     return json(catalog);
   }
 
+  // Homepage markdown negotiation
   if ((path === '/' || path === '') && wantsMarkdown(request)) {
     return text(AGENT_SURFACE.indexMd, 'text/markdown; charset=utf-8', {
       Link: '</index.md>; rel="alternate"; type="text/markdown"',
