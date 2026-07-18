@@ -16,7 +16,7 @@ this page links to them rather than repeating them.
 ## The one-sentence version
 
 free-ai is a single Cloudflare Worker that speaks the OpenAI API, but instead of
-one backend it fans requests across ~12 free-tier LLM providers (30+ chat models
+one backend it fans requests across 11 free-tier LLM providers (80+ chat models
 in [`src/config.ts`](../../src/config.ts)), picking the healthiest capable model
 for each call and falling back automatically when one throttles. Fleet projects
 call it as their "OpenAI" so nobody pays per-token for routine work.
@@ -94,7 +94,7 @@ no compare-and-swap, so concurrent requests would race and over-admit.
 `getModelRegistry(env)` (`config.ts:1679`) starts from the static model list and
 drops any model whose provider has no API key present in `env`
 (`hasProviderKey`). Then `getRoutingQuotaStatuses` drops providers already known
-to be quota-exhausted (`index.ts:1313`). *Why:* the registry is static, but which
+to be quota-exhausted (`index.ts:1312`). *Why:* the registry is static, but which
 slice is *live* depends entirely on which free keys this deployment happens to
 hold — so the usable set is computed fresh per request from the environment.
 
@@ -151,7 +151,7 @@ DO rotates the top candidates so load spreads instead of hammering the #1 model.
 
 ### 7. Try, fall back, record
 
-The `pRetry` loop (`index.ts:1438`) walks the ranked list, **capped at two
+The `pRetry` loop (`index.ts:1437`) walks the ranked list, **capped at two
 attempts**. It calls `providerCallers[candidate.provider]` with the normalized
 OpenAI payload. On success it calls `healthRecord(success)` and stamps the
 response with `x_gateway: { provider, model, attempts, reasoning_effort,
@@ -174,7 +174,7 @@ without hitting the DO on every request ([ADR-007](decisions/adr-001-007.md)).
 
 ### 8. Analytics (never on the critical path)
 
-`recordAnalytics` (`index.ts:1071`) upserts a per-`project_id`/day/provider/model
+`recordAnalytics` (`index.ts:1070`) upserts a per-`project_id`/day/provider/model
 row into the D1 `GATEWAY_DB`, scheduled via `executionCtx.waitUntil` so it runs
 *after* the response is sent and its errors are swallowed. *Why:* analytics is
 observability, not correctness — it must never slow down or fail a completion.
