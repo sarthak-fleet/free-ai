@@ -5,11 +5,11 @@ description: Auth-safe health, sanitized API evidence, provider cost/degradation
 
 # Automation inventory and Foundry evidence contract
 
-> Source of truth for the **`ai-infrastructure-toolbox-automation`** capability
-> defined in
-> [`fleet-automation-closure/openspec/changes/automate-ai-infrastructure-toolbox`](https://github.com/sarthakagrawal927/fleet/tree/main/openspec/changes/automate-ai-infrastructure-toolbox).
-> Code is authoritative for behavior; this page records the *contract* the
-> Foundry coverage audit reads, plus recovery owners.
+> Project-side contract for the **`ai-infrastructure-toolbox-automation`**
+> capability. Code is authoritative for behavior; this page records the
+> sanitized evidence and recovery ownership consumed by Foundry. The central
+> capability specification moves with the Foundry control plane and is not
+> duplicated here.
 
 Free AI is **maintenance-only** Toolbox infrastructure. This inventory exists
 so fleet automation can verify auth, provider, cost, storage, and
