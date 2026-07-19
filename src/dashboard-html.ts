@@ -268,6 +268,7 @@ export const DASHBOARD_HTML = `<!doctype html>
           <option value="pollinations">pollinations</option>
           <option value="cohere">cohere</option>
           <option value="mistral">mistral</option>
+          <option value="zai">zai</option>
         </select>
         <input id="replayModel" placeholder="model or auto" value="auto" />
         <input id="replayProject" placeholder="project_id" value="replay-lab" />

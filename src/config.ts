@@ -1477,6 +1477,58 @@ const DEFAULT_MODELS: ModelCandidate[] = [
       maxOutputTokens: 262_144,
     },
   },
+
+  // ── Z.ai / Zhipu GLM (free Flash models, OpenAI-compatible) ──────────
+  // GLM-4.7-Flash and GLM-4.5-Flash are free; GLM-4.6V-Flash is a free
+  // vision model. Previously only reachable via Cerebras/OpenRouter.
+  {
+    id: 'zai-glm-4-7-flash',
+    provider: 'zai',
+    model: 'glm-4.7-flash',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.84,
+    capabilities: {
+      toolCalling: true,
+      jsonMode: true,
+      vision: false,
+      contextWindow: 131_072,
+      maxOutputTokens: 16_384,
+    },
+  },
+  {
+    id: 'zai-glm-4-5-flash',
+    provider: 'zai',
+    model: 'glm-4.5-flash',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.8,
+    capabilities: {
+      toolCalling: true,
+      jsonMode: true,
+      vision: false,
+      contextWindow: 131_072,
+      maxOutputTokens: 16_384,
+    },
+  },
+  {
+    id: 'zai-glm-4-6v-flash',
+    provider: 'zai',
+    model: 'glm-4.6v-flash',
+    reasoning: 'medium',
+    supportsStreaming: true,
+    enabled: true,
+    priority: 0.78,
+    capabilities: {
+      toolCalling: true,
+      jsonMode: true,
+      vision: true,
+      contextWindow: 65_536,
+      maxOutputTokens: 8_192,
+    },
+  },
 ];
 
 const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
@@ -1584,6 +1636,10 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'cerebras:gemma-4-31b': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   // AUTO-ADDED limits
   'openrouter:tencent/hy3:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
+  // Z.ai / Zhipu GLM — free Flash models, rate-limited upstream
+  'zai:glm-4.7-flash': { requestsPerDay: 200 }, // AUTO-ADDED — tune
+  'zai:glm-4.5-flash': { requestsPerDay: 200 }, // AUTO-ADDED — tune
+  'zai:glm-4.6v-flash': { requestsPerDay: 100 }, // AUTO-ADDED — tune
 };
 
 export interface RateLimitConfig {
@@ -1608,6 +1664,7 @@ const PROVIDER_KEY_REQUIRED: Record<TextProvider, boolean> = {
   pollinations: false,
   cohere: true,
   mistral: true,
+  zai: true,
 };
 
 export function isWorkersAiEnabled(env: Env): boolean {
@@ -1653,6 +1710,8 @@ function hasProviderKey(env: Env, provider: TextProvider): boolean {
       return Boolean(env.COHERE_API_KEY);
     case 'mistral':
       return Boolean(env.MISTRAL_API_KEY);
+    case 'zai':
+      return Boolean(env.ZAI_API_KEY);
     default:
       return false;
   }

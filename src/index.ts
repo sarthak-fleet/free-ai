@@ -103,6 +103,7 @@ const TEXT_PROVIDER_VALUES = [
   'pollinations',
   'cohere',
   'mistral',
+  'zai',
 ] as const;
 
 const QUOTA_POLLING_PROVIDERS: readonly TextProvider[] = ['openrouter'];

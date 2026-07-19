@@ -1,6 +1,6 @@
 # Free Compute Source Audit
 
-Checked on 2026-05-28.
+Checked on 2026-05-28; newly wired-in providers section refreshed 2026-07-19.
 
 ## Current Coverage
 
@@ -17,6 +17,7 @@ The gateway already has active adapters for these text providers:
 - Pollinations
 - Cohere
 - Mistral
+- Z.ai / Zhipu GLM (added 2026-07)
 
 It also has modality-specific providers for embeddings, images, video, TTS, and STT. The provider directory is structurally consistent with the TypeScript unions in `src/types.ts` and the caller maps in `src/providers/index.ts`: every current text provider has an adapter file, and each modality registry filters providers through an availability check before routing.
 
@@ -81,6 +82,27 @@ GitHub Models includes rate-limited free usage for GitHub accounts, but paid usa
 ### Already useful: Groq and Cerebras
 
 Groq and Cerebras publish free-tier or free-trial rate limits and should stay near the front of routing while healthy. They also return useful rate-limit headers, so the gateway can eventually learn headroom from headers instead of static request/day estimates.
+
+## Newly wired-in providers (2026-07)
+
+One OpenAI-compatible provider was integrated as a first-class adapter in 2026-07 and is documented in [`docs/product/free-ai-credits-guide.md`](../product/free-ai-credits-guide.md):
+
+- **Z.ai / Zhipu GLM** — free GLM-4.7-Flash + free vision via GLM-4.6V-Flash. Genuinely free forever (not credits). Adapter: `src/providers/zai.ts`.
+
+The integration added one `src/providers/zai.ts` adapter, a `TextProvider` union entry, a `hasProviderKey` branch, a `PROVIDER_KEY_REQUIRED` flag, three model entries in `DEFAULT_MODELS`, and per-model `DEFAULT_LIMITS`. It ranks below the healthiest direct free-tier providers (Groq, Cerebras, Gemini) but above Workers AI fallback.
+
+## Evaluated and rejected for low ROI (2026-07)
+
+Six OpenAI-compatible providers were evaluated and deliberately **not** wired in, because each adds an env var + adapter + routing entries in exchange for little or no recurring free capacity we don't already have. Full rationale in [`docs/product/free-ai-credits-guide.md#not-integrated-evaluated-and-rejected-for-low-roi`](../product/free-ai-credits-guide.md#not-integrated-evaluated-and-rejected-for-low-roi):
+
+- **DeepSeek** — the "free" offer is a one-time 5M-token grant (30 days, then paid). Not a recurring free tier; after the grant it's just another paid provider. We already have free frontier-class routing via Groq/Cerebras/Gemini/Z.ai.
+- **SiliconFlow** — $1 one-time credit; models overlap with Cerebras/OpenRouter.
+- **Alibaba DashScope** — 1M tokens/model, 90 days; Qwen3 already reachable via Groq/Cerebras/OpenRouter.
+- **01.AI (Yi)** — vague small signup tokens; not frontier.
+- **OVH AI Endpoints** — same Llama 3.1 we already reach four other ways; only novel value is EU residency.
+- **Reka** — unclear free tier size; multimodal angle already covered by Gemini for free.
+
+Revisit only if the stated blocker changes.
 
 ## Sources Not Recommended As Default Yet
 

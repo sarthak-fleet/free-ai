@@ -42,6 +42,7 @@ import {
 } from './workers-ai-images';
 import { callWorkersAiStt } from './workers-ai-stt';
 import { callWorkersAiTts } from './workers-ai-tts';
+import { callZai } from './zai';
 
 export const providerCallers: Record<TextProvider, ProviderCaller> = {
   workers_ai: callWorkersAi,
@@ -55,6 +56,7 @@ export const providerCallers: Record<TextProvider, ProviderCaller> = {
   pollinations: callPollinations,
   cohere: callCohere,
   mistral: callMistral,
+  zai: callZai,
 };
 
 export const providerEmbeddingCallers: Record<EmbeddingProvider, ProviderEmbeddingCaller> = {
