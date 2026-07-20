@@ -184,38 +184,6 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     },
   },
   {
-    id: 'groq-qwen3-32b',
-    provider: 'groq',
-    model: 'qwen/qwen3-32b',
-    reasoning: 'high',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.86,
-    capabilities: {
-      toolCalling: true,
-      jsonMode: true,
-      vision: false,
-      contextWindow: 32768,
-      maxOutputTokens: 8192,
-    },
-  },
-  {
-    id: 'groq-llama4-scout',
-    provider: 'groq',
-    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.84,
-    capabilities: {
-      toolCalling: true,
-      jsonMode: true,
-      vision: true,
-      contextWindow: 131072,
-      maxOutputTokens: 8192,
-    },
-  },
-  {
     id: 'groq-llama-8b',
     provider: 'groq',
     model: 'llama-3.1-8b-instant',
@@ -297,22 +265,6 @@ const DEFAULT_MODELS: ModelCandidate[] = [
       vision: false,
       contextWindow: 131072,
       maxOutputTokens: 4096,
-    },
-  },
-  {
-    id: 'openrouter-gpt-oss-120b-free',
-    provider: 'openrouter',
-    model: 'openai/gpt-oss-120b:free',
-    reasoning: 'high',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.77,
-    capabilities: {
-      toolCalling: true,
-      jsonMode: true,
-      vision: false,
-      contextWindow: 32768,
-      maxOutputTokens: 8192,
     },
   },
   {
@@ -1228,38 +1180,6 @@ const DEFAULT_MODELS: ModelCandidate[] = [
     },
   },
   {
-    id: 'openrouter-liquid-lfm-2-5-1-2b-thinking-free',
-    provider: 'openrouter',
-    model: 'liquid/lfm-2.5-1.2b-thinking:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.5, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: {
-      toolCalling: false,
-      jsonMode: true,
-      vision: false,
-      contextWindow: 32768,
-      maxOutputTokens: 4096,
-    },
-  },
-  {
-    id: 'openrouter-liquid-lfm-2-5-1-2b-instruct-free',
-    provider: 'openrouter',
-    model: 'liquid/lfm-2.5-1.2b-instruct:free',
-    reasoning: 'medium',
-    supportsStreaming: true,
-    enabled: true,
-    priority: 0.5, // AUTO-ADDED by check-model-ids — review caps + priority
-    capabilities: {
-      toolCalling: false,
-      jsonMode: true,
-      vision: false,
-      contextWindow: 32768,
-      maxOutputTokens: 4096,
-    },
-  },
-  {
     id: 'openrouter-nvidia-nemotron-3-nano-30b-a3b-free',
     provider: 'openrouter',
     model: 'nvidia/nemotron-3-nano-30b-a3b:free',
@@ -1544,8 +1464,6 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'groq:llama-3.3-70b-versatile': { requestsPerDay: 300 },
   'groq:openai/gpt-oss-120b': { requestsPerDay: 200 },
   'groq:openai/gpt-oss-20b': { requestsPerDay: 500 },
-  'groq:qwen/qwen3-32b': { requestsPerDay: 500 },
-  'groq:meta-llama/llama-4-scout-17b-16e-instruct': { requestsPerDay: 500 },
   'groq:llama-3.1-8b-instant': { requestsPerDay: 1500 },
   // Gemini
   'gemini:gemini-2.5-flash': { requestsPerDay: 500 },
@@ -1553,7 +1471,6 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   // OpenRouter (free models, rate-limited upstream)
   'openrouter:nousresearch/hermes-3-llama-3.1-405b:free': { requestsPerDay: 50 },
   'openrouter:meta-llama/llama-3.3-70b-instruct:free': { requestsPerDay: 50 },
-  'openrouter:openai/gpt-oss-120b:free': { requestsPerDay: 50 },
   'openrouter:qwen/qwen3-next-80b-a3b-instruct:free': { requestsPerDay: 50 },
   'openrouter:qwen/qwen3-coder:free': { requestsPerDay: 50 },
   'openrouter:nvidia/nemotron-nano-12b-v2-vl:free': { requestsPerDay: 100 },
@@ -1618,8 +1535,6 @@ const DEFAULT_LIMITS: Record<string, ProviderLimitConfig> = {
   'openrouter:google/gemma-4-31b-it:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-super-120b-a12b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:openrouter/free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:liquid/lfm-2.5-1.2b-thinking:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
-  'openrouter:liquid/lfm-2.5-1.2b-instruct:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-3-nano-30b-a3b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:nvidia/nemotron-nano-9b-v2:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
   'openrouter:openai/gpt-oss-20b:free': { requestsPerDay: 100 }, // AUTO-ADDED — tune
